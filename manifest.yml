@@ -1,0 +1,25 @@
+modules:
+  jira:dashboardGadget:
+    - key: sustainability-plugin-hello-world-gadget
+      title: sustainability-plugin
+      description: A hello world dashboard gadget.
+      thumbnail: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      resource: main
+      resolver:
+        function: resolver
+      edit:
+        resource: main
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: static/hello-world/build
+permissions:
+  content:
+    styles:
+      - unsafe-inline
+app:
+  runtime:
+    name: nodejs22.x
+  id: ari:cloud:ecosystem::app/a5d4b6d8-65a7-47db-b69a-5f91ff6999d9
