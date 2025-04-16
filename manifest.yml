@@ -1,9 +1,9 @@
 modules:
   jira:dashboardGadget:
-    - key: sustainability-plugin-hello-world-gadget
-      title: sustainability-plugin
-      description: A hello world dashboard gadget.
-      thumbnail: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+    - key: sustainability-plugin-gadget
+      title: Green Track 🌳
+      description: A Jira gadget to track sustainability.
+      thumbnail: https://www.svgrepo.com/show/286077/sustainable-green.svg
       resource: main
       resolver:
         function: resolver
