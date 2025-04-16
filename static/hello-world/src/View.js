@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { view, invoke } from '@forge/bridge';
 import CarbonWidget from './Widgets/Carbon';
 import EnergyWidget from './Widgets/Energy';
-import TreeWidget from './Widgets/Tree';
+import BigTreeWidget from './Widgets/BigTree.js';
 import styles from "./Styles/View.styles.js";
 
 function View() {
@@ -46,7 +46,7 @@ function View() {
 
         {/* Tree Card */}
         <div style={styles.card}>
-          <TreeWidget />
+          <BigTreeWidget />
           <h4>Trees Planted (Offset)</h4>
           <p style={styles.caption}>Calculates equivalent offsets using tree-planting data</p>
         </div>
