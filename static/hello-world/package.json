@@ -9,6 +9,7 @@
     "@atlaskit/form": "^9.0.10",
     "@atlaskit/textfield": "^6.0.1",
     "@forge/bridge": "4.5.0",
+    "lottie-react": "^2.4.1",
     "react": "^16",
     "react-dom": "^16"
   },
