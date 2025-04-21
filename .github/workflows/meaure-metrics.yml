@@ -1,0 +1,34 @@
+name: Emit Real Sustainability Metrics
+
+on: [push]
+
+jobs:
+  measure-and-post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Install green-metrics-tool
+        run: npm install -g @green-coding/green-metrics-tool
+
+      - name: Run Build with Metric Tracking
+        run: |
+          green-metrics-tool run --json --output result.json -- npm run build
+
+      - name: Show Results for Debugging
+        run: cat result.json
+
+      - name: Post Metrics to API
+        env:
+          API_URL: https://webhook.site/cf18b7b0-ddad-4cc2-8a6e-fc7cdfc8f973
+        run: |
+          curl -X POST "$API_URL" \
+            -H "Content-Type: application/json" \
+            --data-binary @result.json
