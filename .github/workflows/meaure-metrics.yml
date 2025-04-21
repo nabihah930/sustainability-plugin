@@ -18,14 +18,10 @@ jobs:
       - name: Clone green-metrics-tool
         run: git clone https://github.com/green-coding-solutions/green-metrics-tool.git
 
-      - name: Build green-metrics-tool
-        working-directory: green-metrics-tool
-        run: go build -o gmt
-
       - name: Run green-metrics-tool with build
         working-directory: green-metrics-tool
         run: |
-          ./gmt run --json --output ../result.json -- npm run build
+          go run ./cmd/green-metrics-tool run --json --output ../result.json -- npm run build
 
       - name: View results
         run: cat result.json
