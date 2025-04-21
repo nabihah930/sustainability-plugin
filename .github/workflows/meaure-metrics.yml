@@ -10,19 +10,24 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          node-version: 22
+          go-version: '1.20'
 
-      - name: Install green-metrics-tool
-        run: npm install -g @green-coding/green-metrics-tool
+      - name: Clone green-metrics-tool
+        run: git clone https://github.com/green-coding-solutions/green-metrics-tool.git
 
-      - name: Run Build with Metric Tracking
+      - name: Build green-metrics-tool
+        working-directory: green-metrics-tool
+        run: go build -o gmt
+
+      - name: Run green-metrics-tool with build
+        working-directory: green-metrics-tool
         run: |
-          green-metrics-tool run --json --output result.json -- npm run build
+          ./gmt run --json --output ../result.json -- npm run build
 
-      - name: Show Results for Debugging
+      - name: View results
         run: cat result.json
 
       - name: Post Metrics to API
