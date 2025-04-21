@@ -3,7 +3,7 @@ name: Eco CI Measurement
 on: [push]
 
 jobs:
-  measure-energy:
+  Measure-Metrics:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -30,8 +30,8 @@ jobs:
         uses: green-coding-solutions/eco-ci-energy-estimation@v4
         with:
           task: get-measurement
-          output-format: json
-          fail-on-error: false
+          json-output: true
+          continue-on-error: true
 
       - name: Print Eco CI Results
         run: echo "${{ steps.eco.outputs.measurement }}"
