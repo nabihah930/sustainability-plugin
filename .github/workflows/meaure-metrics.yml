@@ -1,35 +1,35 @@
-name: Emit Real Sustainability Metrics
+name: Emit Actual Sustainability Metrics
 
 on: [push]
 
 jobs:
-  measure-and-post:
+  collect-metrics:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-
-      - name: Clone green-metrics-tool
-        run: git clone https://github.com/green-coding-solutions/green-metrics-tool.git
-
-      - name: Run green-metrics-tool with build
-        working-directory: green-metrics-tool
+      - name: Install Scaphandre
         run: |
-          go run ./cmd/green-metrics-tool run --json --output ../result.json -- npm run build
+          curl -L https://github.com/hubblo-org/scaphandre/releases/latest/download/scaphandre_x86_64-unknown-linux-gnu.tar.gz | tar xz
+          sudo mv scaphandre /usr/local/bin/
 
-      - name: View results
-        run: cat result.json
+      - name: Install project dependencies
+        run: npm install
 
-      - name: Post Metrics to API
-        env:
-          API_URL: https://webhook.site/cf18b7b0-ddad-4cc2-8a6e-fc7cdfc8f973
+      - name: Measure energy usage with Scaphandre
         run: |
-          curl -X POST "$API_URL" \
-            -H "Content-Type: application/json" \
-            --data-binary @result.json
+          sudo scaphandre json > scaphandre-output.json &
+          export SCAPH_PID=$!
+          npm run build
+          sleep 2
+          kill $SCAPH_PID
+
+      - name: Inspect output
+        run: cat scaphandre-output.json
+
+      - name: Post to the Test API
+        run: |
+          curl -X POST https://webhook.site/cf18b7b0-ddad-4cc2-8a6e-fc7cdfc8f973 \
+          -H "Content-Type: application/json" \
+          -d @scaphandre-output.json
