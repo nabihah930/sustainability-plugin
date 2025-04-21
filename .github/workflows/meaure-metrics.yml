@@ -8,20 +8,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+      
       - name: Install Scaphandre
         run: |
           # Get latest version
           VERSION=$(curl -s https://api.github.com/repos/hubblo-org/scaphandre/releases/latest | grep tag_name | cut -d '"' -f 4)
-          
-          # Download and extract
-          wget https://github.com/hubblo-org/scaphandre/releases/download/${VERSION}/scaphandre_x86_64-unknown-linux-gnu.tar.gz
-          tar -xzf scaphandre_x86_64-unknown-linux-gnu.tar.gz
+      
+          # Download raw binary
+          wget https://github.com/hubblo-org/scaphandre/releases/download/${VERSION}/scaphandre_x86_64-unknown-linux-gnu -O scaphandre
+      
+          # Make executable
+          chmod +x scaphandre
           sudo mv scaphandre /usr/local/bin/
-          
-          # Confirm installation
+      
+          # Confirm it's installed
           scaphandre --version
-
 
       - name: Install project dependencies
         run: npm install
