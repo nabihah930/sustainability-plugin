@@ -1,6 +1,9 @@
 name: Emit Actual Sustainability Metrics
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   collect-metrics:
