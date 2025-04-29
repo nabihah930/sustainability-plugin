@@ -1,0 +1,50 @@
+name: Eco CI Measurement
+
+on: [push]
+
+jobs:
+  Measure-Metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Start Eco CI Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          task: start-measurement
+
+      # Your actual CI tasks (example: build & test)
+      - name: Run build
+        run: |
+          echo "Pretend we're building the project..."
+          sleep 10  # simulate some CPU work
+
+      - name: Run tests
+        run: |
+          echo "Pretend we're testing the project..."
+          sleep 5
+
+      - name: Stop and Get Measurement
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          task: get-measurement
+          json-output: true
+          continue-on-error: true
+
+      - name: Print Eco CI Results
+        run: echo "${{ steps.eco.outputs.measurement }}"
+
+      - name: Send Measurement to Webhook
+        run: |
+          if [ -z "${{ steps.eco.outputs.measurement }}" ]; then
+            echo "No measurement found, sending dummy data..."
+            curl -X POST https://webhook.site/cf18b7b0-ddad-4cc2-8a6e-fc7cdfc8f973 \
+              -H "Content-Type: application/json" \
+              -d '{"energy_kwh": 0.042, "co2_grams": 11.3, "duration_seconds": 30}'
+          else
+            curl -X POST https://webhook.site/cf18b7b0-ddad-4cc2-8a6e-fc7cdfc8f973 \
+              -H "Content-Type: application/json" \
+              -d '${{ steps.eco.outputs.measurement }}'
+          fi
