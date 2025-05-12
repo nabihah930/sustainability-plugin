@@ -103,51 +103,64 @@ jobs:
       #       -H "Content-Type: application/json" \
       #       -d "$json"
 
+
       - name: Send complete measurement JSON to webhook
         run: |
           # Parse relevant rows from /tmp/eco-ci/output.txt
           label_rows=$(grep -oP '<tr><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td></tr>' /tmp/eco-ci/output.txt)
-
-          # Initialize JSON
-          json='{
-            "repository": "${{ github.repository }}",
-            "branch": "${{ github.ref_name }}",
-            "commit_sha": "${{ github.sha }}",
-            "job_id": "${{ github.run_id }}",
-            "timestamp": "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'",
-            "run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "measurements": []
-          }'
-
-          # Use jq to append parsed table rows
+      
+          # Build base JSON template with GitHub variables
+          export REPO="${{ github.repository }}"
+          export BRANCH="${{ github.ref_name }}"
+          export COMMIT="${{ github.sha }}"
+          export JOB_ID="${{ github.run_id }}"
+          export RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          export TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+      
+          json=$(envsubst <<EOF
+      {
+        "repository": "$REPO",
+        "branch": "$BRANCH",
+        "commit_sha": "$COMMIT",
+        "job_id": "$JOB_ID",
+        "timestamp": "$TIMESTAMP",
+        "run_url": "$RUN_URL",
+        "measurements": []
+      }
+      EOF
+      )
+      
+          # Loop through table rows and append measurements
           for row in $label_rows; do
             label=$(echo "$row" | sed -n 's|.*<tr><td>\(.*\)</td><td>.*|\1|p')
             cpu=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
             energy=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
             power=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
             duration=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td></tr>.*|\1|p')
-
-            measurement=$(jq -n \
-              --arg label "$label" \
-              --arg cpu "$cpu" \
-              --arg energy "$energy" \
-              --arg power "$power" \
-              --arg duration "$duration" \
-              '{
-                label: $label,
-                avg_cpu_utilization_percent: ($cpu | tonumber),
-                total_energy_joules: ($energy | tonumber),
-                avg_power_watts: ($power | tonumber),
-                duration_seconds: ($duration | tonumber)
-              }')
-
-            json=$(echo "$json" | jq --argjson m "$measurement" '.measurements += [$m]')
+      
+            if [[ -n "$label" ]]; then
+              measurement=$(jq -n \
+                --arg label "$label" \
+                --arg cpu "$cpu" \
+                --arg energy "$energy" \
+                --arg power "$power" \
+                --arg duration "$duration" \
+                '{
+                  label: $label,
+                  avg_cpu_utilization_percent: ($cpu | tonumber),
+                  total_energy_joules: ($energy | tonumber),
+                  avg_power_watts: ($power | tonumber),
+                  duration_seconds: ($duration | tonumber)
+                }')
+      
+              json=$(echo "$json" | jq --argjson m "$measurement" '.measurements += [$m]')
+            fi
           done
-
+      
           echo "Final JSON payload:"
           echo "$json"
-
+      
           # Send to webhook
           curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
             -H "Content-Type: application/json" \
-            -d "$json"
+            --data "$json"
