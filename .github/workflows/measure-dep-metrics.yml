@@ -186,3 +186,31 @@ jobs:
           curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
             -H "Content-Type: application/json" \
             --data "$json"
+
+      - name: Convert HTML table to JSON (Bash-only)
+        run: |
+          echo '{ "measurements": [' > /tmp/eco-ci/output.json
+          awk 'BEGIN { RS="</tr>"; FS="<td>|</td>"; first=1 }
+          /<tr>/ && NF > 5 && $2 !~ /^$/ {
+            label = $2
+            cpu = $3 == "N/A" ? "null" : $3
+            energy = $4
+            power = $5
+            duration = $6
+            if (!first) {
+              printf(",\n") >> "/tmp/eco-ci/output.json"
+            }
+            first = 0
+            printf("  {\n    \"label\": \"%s\",\n", label) >> "/tmp/eco-ci/output.json"
+            printf("    \"avg_cpu_utilization_percent\": %s,\n", cpu) >> "/tmp/eco-ci/output.json"
+            printf("    \"total_energy_joules\": %.5f,\n", energy) >> "/tmp/eco-ci/output.json"
+            printf("    \"avg_power_watts\": %.2f,\n", power) >> "/tmp/eco-ci/output.json"
+            printf("    \"duration_seconds\": %.2f\n  }", duration) >> "/tmp/eco-ci/output.json"
+          }
+          END {
+            print "\n] }" >> "/tmp/eco-ci/output.json"
+          }' /tmp/eco-ci/output.txt
+
+          curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/eco-ci/output.json
