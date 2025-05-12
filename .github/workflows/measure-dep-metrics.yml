@@ -147,47 +147,95 @@ jobs:
       #       -H "Content-Type: application/json" \
       #       --data-binary @/tmp/eco-ci/output.json
 
-      - name: Convert HTML table to JSON (Improved Bash-only)
+      # - name: Convert HTML table to JSON (Improved Bash-only)
+      #   run: |
+      #     {
+      #       echo '{ "measurements": ['
+      #       first=1
+      #       # Extract lines with 5 <td> fields (actual data rows)
+      #       grep -oP '<tr><td>.*?</td><td>.*?</td><td>.*?</td><td>.*?</td><td>.*?</td></tr>' /tmp/eco-ci/output.txt | while read -r line; do
+      #         # Extract and clean each field
+      #         label=$(echo "$line" | sed -n 's/.*<td>\(.*\)<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><\/tr>/\1/p')
+      #         cpu=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>\(.*\)<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><\/tr>/\1/p')
+      #         energy=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><td>.*<\/td><td>.*<\/td><\/tr>/\1/p')
+      #         power=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><td>.*<\/td><\/tr>/\1/p')
+      #         duration=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><\/tr>/\1/p')
+  
+      #         # Format CPU value (null for N/A)
+      #         if [[ "$cpu" == "N/A" ]]; then
+      #           cpu_value=null
+      #         else
+      #           cpu_value=$cpu
+      #         fi
+  
+      #         # Add comma between JSON objects
+      #         if [[ $first -eq 0 ]]; then
+      #           echo ","
+      #         fi
+      #         first=0
+  
+      #         # Output the JSON object
+      #         echo "  {"
+      #         echo "    \"label\": \"${label}\","
+      #         echo "    \"avg_cpu_utilization_percent\": ${cpu_value},"
+      #         echo "    \"total_energy_joules\": ${energy},"
+      #         echo "    \"avg_power_watts\": ${power},"
+      #         echo "    \"duration_seconds\": ${duration}"
+      #         echo -n "  }"
+      #       done
+      #       echo
+      #       echo "] }"
+      #     } > /tmp/eco-ci/output.json
+
+      #     curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
+      #       -H "Content-Type: application/json" \
+      #       --data-binary @/tmp/eco-ci/output.json
+            
+      - name: Convert HTML table to enriched JSON (with metadata)
         run: |
           {
-            echo '{ "measurements": ['
+            echo '{'
+            echo "  \"repository\": \"${{ github.repository }}\","
+            echo "  \"branch\": \"${{ github.ref_name }}\","
+            echo "  \"commit_sha\": \"${{ github.sha }}\","
+            echo "  \"job_id\": \"${{ github.run_id }}\","
+            echo "  \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\","
+            echo "  \"run_url\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\","
+            echo '  "measurements": ['
+      
             first=1
-            # Extract lines with 5 <td> fields (actual data rows)
             grep -oP '<tr><td>.*?</td><td>.*?</td><td>.*?</td><td>.*?</td><td>.*?</td></tr>' /tmp/eco-ci/output.txt | while read -r line; do
-              # Extract and clean each field
               label=$(echo "$line" | sed -n 's/.*<td>\(.*\)<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><\/tr>/\1/p')
               cpu=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>\(.*\)<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><\/tr>/\1/p')
               energy=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><td>.*<\/td><td>.*<\/td><\/tr>/\1/p')
               power=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><td>.*<\/td><\/tr>/\1/p')
               duration=$(echo "$line" | sed -n 's/.*<td>.*<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><\/tr>/\1/p')
-  
-              # Format CPU value (null for N/A)
+      
               if [[ "$cpu" == "N/A" ]]; then
                 cpu_value=null
               else
                 cpu_value=$cpu
               fi
-  
-              # Add comma between JSON objects
+      
               if [[ $first -eq 0 ]]; then
                 echo ","
               fi
               first=0
-  
-              # Output the JSON object
-              echo "  {"
-              echo "    \"label\": \"${label}\","
-              echo "    \"avg_cpu_utilization_percent\": ${cpu_value},"
-              echo "    \"total_energy_joules\": ${energy},"
-              echo "    \"avg_power_watts\": ${power},"
-              echo "    \"duration_seconds\": ${duration}"
-              echo -n "  }"
+      
+              echo "    {"
+              echo "      \"label\": \"${label}\","
+              echo "      \"avg_cpu_utilization_percent\": ${cpu_value},"
+              echo "      \"total_energy_joules\": ${energy},"
+              echo "      \"avg_power_watts\": ${power},"
+              echo "      \"duration_seconds\": ${duration}"
+              echo -n "    }"
             done
+      
             echo
-            echo "] }"
+            echo "  ]"
+            echo "}"
           } > /tmp/eco-ci/output.json
 
           curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
             -H "Content-Type: application/json" \
             --data-binary @/tmp/eco-ci/output.json
-            
