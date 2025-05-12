@@ -14,7 +14,7 @@ jobs:
       ECO_CI_FILTER_PROJECT: "CI/CD"
       ECO_CI_FILTER_MACHINE: "saas-linux-small-amd64"
       ECO_CI_FILTER_TAGS: ""
-      ECO_CI_JSON_OUTPUT: "true"
+      ECO_CI_JSON_OUTPUT: "false"
       ECO_CI_CALCULATE_CO2: "false"
       ECO_CI_CLONE_BRANCH: "main"
       ECO_CI_MACHINE_POWER_DATA: "gitlab_EPYC_7B12_saas-linux-small-amd64.sh"
@@ -57,9 +57,60 @@ jobs:
       #     curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
       #       -H "Content-Type: text/plain" \
       #       --data-binary @/tmp/eco-ci/output.txt
-     
-      - name: Send JSON measurement results to webhook
+
+      # - name: Send JSON results to webhook (manual workaround)
+      #   run: |
+      #     CO2=$(grep -oP 'CO2 Emissions: \K[0-9.]+' /tmp/eco-ci/output.txt || echo "0")
+      #     ENERGY=$(grep -oP 'Energy Used: \K[0-9.]+' /tmp/eco-ci/output.txt || echo "0")
+      #     json="{\"co2_grams\": $CO2, \"energy_kwh\": $ENERGY}"
+
+      #     echo "Sending: $json"
+
+      #     curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
+      #       -H "Content-Type: application/json" \
+      #       -d "$json"
+
+      - name: Send detailed JSON results to webhook
         run: |
+          # Extract measurement values (fallback to 0 if missing)
+          CO2=$(grep -oP 'CO2 Emissions: \K[0-9.]+' /tmp/eco-ci/output.txt || echo "0")
+          ENERGY=$(grep -oP 'Energy Used: \K[0-9.]+' /tmp/eco-ci/output.txt || echo "0")
+
+          # Add metadata from GitHub Actions environment
+          JOB_ID="${{ github.run_id }}"
+          COMMIT_SHA="${{ github.sha }}"
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Construct JSON
+          json=$(jq -n \
+            --arg co2 "$CO2" \
+            --arg energy "$ENERGY" \
+            --arg job_id "$JOB_ID" \
+            --arg sha "$COMMIT_SHA" \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg timestamp "$TIMESTAMP" \
+            --arg run_url "$RUN_URL" \
+            '{
+              repository: $repo,
+              branch: $branch,
+              commit_sha: $sha,
+              job_id: $job_id,
+              timestamp: $timestamp,
+              run_url: $run_url,
+              measurement: {
+                co2_grams: ($co2 | tonumber),
+                energy_kwh: ($energy | tonumber)
+              }
+            }')
+
+          echo "Sending payload to webhook:"
+          echo "$json"
+
+          # Send to webhook
           curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
             -H "Content-Type: application/json" \
-            --data-binary @/tmp/eco-ci/output.json
+            -d "$json"
