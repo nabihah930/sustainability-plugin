@@ -121,11 +121,11 @@ jobs:
 
           # Use jq to append parsed table rows
           for row in $label_rows; do
-            label=$(echo "$row" | sed -n 's/.*<tr><td>\(.*\)<\/td><td>.*/\1/p')
-            cpu=$(echo "$row" | sed -n 's/.*<td>'"$label"'<\/td><td>\(.*\)<\/td><td>.*/\1/p')
-            energy=$(echo "$row" | sed -n 's/.*<td>'"$label"'<\/td><td>.*<\/td><td>\(.*\)<\/td><td>.*/\1/p')
-            power=$(echo "$row" | sed -n 's/.*<td>'"$label"'<\/td><td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><td>.*/\1/p')
-            duration=$(echo "$row" | sed -n 's/.*<td>'"$label"'<\/td><td>.*<\/td><td>.*<\/td><td>.*<\/td><td>\(.*\)<\/td><\/tr>.*/\1/p')
+            label=$(echo "$row" | sed -n 's|.*<tr><td>\(.*\)</td><td>.*|\1|p')
+            cpu=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
+            energy=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
+            power=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
+            duration=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td></tr>.*|\1|p')
 
             measurement=$(jq -n \
               --arg label "$label" \
