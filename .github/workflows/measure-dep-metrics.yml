@@ -15,6 +15,7 @@ jobs:
       ECO_CI_FILTER_MACHINE: "saas-linux-small-amd64"
       ECO_CI_FILTER_TAGS: ""
       ECO_CI_JSON_OUTPUT: "false"
+      ECO_CI_GEO_CITY: "Lappeenranta"
       ECO_CI_GEO_LAT: 61.0466
       ECO_CI_GEO_LON: 28.0685
       ECO_CI_LOCATION: "FI"
