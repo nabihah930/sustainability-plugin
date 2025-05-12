@@ -3,6 +3,13 @@ import { storage } from '@forge/api';
 
 const resolver = new Resolver();
 
+resolver.define('getText', (req) => {
+  console.log(req);
+  return 'Hello world!';
+});
+
+let metricsData = [];
+let checklistData = {};
 // Save metrics with timestamp
 export async function saveMetrics(sprintId, metrics) {
   await storage.set(`metrics_${sprintId}`, {
@@ -10,7 +17,6 @@ export async function saveMetrics(sprintId, metrics) {
     timestamp: new Date().toISOString(),
   });
 }
-
 
 resolver.define('submitMetrics', async ({ payload }) => {
   const { sprintId, carbonEmissions, energyUsed, memoryUsed, dataTransferred } = payload;
@@ -29,6 +35,20 @@ resolver.define('submitMetrics', async ({ payload }) => {
   }
 });
 
+// GET /sprint-summary - Return metrics for the latest sprint
+resolver.define('getSprintSummary', async ({ payload }) => {
+  const { sprintId } = payload;
+  const sprintMetrics = metricsData.filter(m => m.sprintId === sprintId);
+  const summary = {
+    totalCarbon: sprintMetrics.reduce((sum, m) => sum + m.carbonEmissions, 0),
+    totalEnergy: sprintMetrics.reduce((sum, m) => sum + m.energyUsed, 0),
+    memoryUsed: sprintMetrics.reduce((sum, m) => sum + m.memoryUsed, 0),
+    dataTransferred: sprintMetrics.reduce((sum, m) => sum + m.dataTransferred, 0),
+    entries: sprintMetrics.length
+  };
+
+  return summary;
+});
 // Define: Get all stored metrics
 resolver.define('getAllStoredMetrics', async () => {
   try {
@@ -61,13 +81,9 @@ resolver.define('storeFixedMetrics', async () => {
 });
 
 // Text check (simple test endpoint)
-resolver.define('getText', (req) => {
-  console.log(req);
-  return 'Hello world!';
-});
+
 
 // Checklist-related endpoints (static checklist + submissions)
-let checklistData = {};
 
 resolver.define('getChecklist', async () => {
   return [

@@ -64,18 +64,19 @@ function View() {
       </p>
 
       <div style={styles.cardContainer}>
+        {/* Energy Card */}
         <div style={styles.card}>
           <EnergyWidget />
           <h4>Energy Usage</h4>
           <p style={styles.caption}>Tracks energy consumed by recent builds</p>
         </div>
-
+        {/* Carbon Card */}
         <div style={styles.card}>
           <CarbonWidget />
           <h4>Carbon Emissions</h4>
           <p style={styles.caption}>Estimates CO₂ generated per commit pipeline</p>
         </div>
-
+        {/* Tree Card */}
         <div style={styles.card}>
           <BigTreeWidget />
           <h4>Trees Planted (Offset)</h4>
