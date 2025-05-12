@@ -14,7 +14,7 @@ jobs:
       ECO_CI_FILTER_PROJECT: "CI/CD"
       ECO_CI_FILTER_MACHINE: "saas-linux-small-amd64"
       ECO_CI_FILTER_TAGS: ""
-      ECO_CI_JSON_OUTPUT: "false"
+      ECO_CI_JSON_OUTPUT: "true"
       ECO_CI_CALCULATE_CO2: "false"
       ECO_CI_CLONE_BRANCH: "main"
       ECO_CI_MACHINE_POWER_DATA: "gitlab_EPYC_7B12_saas-linux-small-amd64.sh"
@@ -52,8 +52,14 @@ jobs:
           /tmp/eco-ci-repo/scripts/display_results.sh display_results "${ECO_CI_DISPLAY_TABLE}" "${ECO_CI_DISPLAY_BADGE}"
           cat /tmp/eco-ci/output.txt
 
-      - name: Send measurement results to webhook
+      # - name: Send measurement results to webhook
+      #   run: |
+      #     curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
+      #       -H "Content-Type: text/plain" \
+      #       --data-binary @/tmp/eco-ci/output.txt
+     
+      - name: Send JSON measurement results to webhook
         run: |
           curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
-            -H "Content-Type: text/plain" \
-            --data-binary @/tmp/eco-ci/output.txt
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/eco-ci/output.json
