@@ -37,8 +37,11 @@ jobs:
         run: |
           /tmp/eco-ci-repo/scripts/setup.sh start_measurement "${ECO_CI_MACHINE_POWER_DATA}" "${GITHUB_RUN_ID}" "${GITHUB_REF_NAME}" "${GITHUB_REPOSITORY}" "${GITHUB_REPOSITORY_ID}" ".github/workflows/measure.yml" "${GITHUB_SHA}" "github" "${ECO_CI_SEND_DATA}" "${ECO_CI_FILTER_TYPE}" "${ECO_CI_FILTER_PROJECT}" "${ECO_CI_FILTER_MACHINE}" "${ECO_CI_FILTER_TAGS}" "${ECO_CI_CALCULATE_CO2}" "${ECO_CI_GMT_API_TOKEN}" "${ECO_CI_ELECTRICITYMAPS_API_TOKEN}" "${ECO_CI_JSON_OUTPUT}" "${ECO_CI_API_ENDPOINT_ADD}" "${ECO_CI_API_BADGE_GET}" "${ECO_CI_DASHBOARD_URL}"
 
-      - name: Deploy (placeholder)
-        run: echo "Deploying application..."  # replace with actual deploy command
+      - name: Dummy Workload (replace with real job)
+        run: |
+          echo "Simulating deployment workload..."
+          dd if=/dev/zero of=/dev/null bs=1M count=1000
+          sleep 5
 
       - name: Get Measurement
         run: |
