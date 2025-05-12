@@ -46,8 +46,14 @@ jobs:
       - name: Get Measurement
         run: |
           /tmp/eco-ci-repo/scripts/make_measurement.sh make_measurement "${ECO_CI_LABEL}"
-
+          
       - name: Display Results
         run: |
           /tmp/eco-ci-repo/scripts/display_results.sh display_results "${ECO_CI_DISPLAY_TABLE}" "${ECO_CI_DISPLAY_BADGE}"
           cat /tmp/eco-ci/output.txt
+
+      - name: Upload measurement results
+        uses: actions/upload-artifact@v3
+        with:
+          name: eco-ci-output
+          path: /tmp/eco-ci/output.txt
