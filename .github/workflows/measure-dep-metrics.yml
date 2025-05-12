@@ -52,11 +52,11 @@ jobs:
           /tmp/eco-ci-repo/scripts/display_results.sh display_results "${ECO_CI_DISPLAY_TABLE}" "${ECO_CI_DISPLAY_BADGE}"
           cat /tmp/eco-ci/output.txt
 
-      # - name: Send measurement results to webhook
-      #   run: |
-      #     curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
-      #       -H "Content-Type: text/plain" \
-      #       --data-binary @/tmp/eco-ci/output.txt
+      - name: Send simple measurement results to webhook
+        run: |
+          curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
+            -H "Content-Type: text/plain" \
+            --data-binary @/tmp/eco-ci/output.txt
 
       # - name: Send JSON results to webhook (manual workaround)
       #   run: |
