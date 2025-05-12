@@ -52,8 +52,8 @@ jobs:
           /tmp/eco-ci-repo/scripts/display_results.sh display_results "${ECO_CI_DISPLAY_TABLE}" "${ECO_CI_DISPLAY_BADGE}"
           cat /tmp/eco-ci/output.txt
 
-      - name: Upload measurement results
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: eco-ci-output
-          path: /tmp/eco-ci/output.txt
+      - name: Send measurement results to webhook
+        run: |
+          curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
+            -H "Content-Type: text/plain" \
+            --data-binary @/tmp/eco-ci/output.txt
