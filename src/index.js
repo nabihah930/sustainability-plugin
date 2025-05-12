@@ -50,8 +50,8 @@ resolver.define('getAllStoredMetrics', async () => {
 
 // Define: Store a fixed data set immediately (for testing/demo)
 resolver.define('storeFixedMetrics', async () => {
-  await saveMetrics('SPRINT-123', {
-    carbonEmissions: 4.2,
+  await saveMetrics('SPRINT-1234', {
+    carbonEmissions: 4.62,
     energyUsed: 12.5,
     memoryUsed: 350,
     dataTransferred: 1.8

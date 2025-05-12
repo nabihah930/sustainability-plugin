@@ -1,61 +1,59 @@
 import React, { useEffect, useState } from 'react';
 import { view, invoke } from '@forge/bridge';
-import CarbonWidget from './Widgets/Carbon';
-import EnergyWidget from './Widgets/Energy';
-import BigTreeWidget from './Widgets/BigTree.js';
-import styles from "./Styles/View.styles.js";
+import CarbonWidget   from './Widgets/Carbon';
+import EnergyWidget   from './Widgets/Energy';
+import BigTreeWidget  from './Widgets/BigTree';
+import styles from './Styles/View.styles';
 
 function View() {
   const [context, setContext] = useState();
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+  const [hello,   setHello]   = useState(null);
+  const [metrics, setMetrics] = useState([]);
+  const [error,   setError]   = useState(null);
 
-  useEffect(() => {
-    invoke('getText', { example: 'my-invoke-variable' }).then(setData);
-  }, []);
+  // initial hello + context
+  useEffect(() => { invoke('getText').then(setHello); view.getContext().then(setContext); }, []);
 
-  useEffect(() => {
-    view.getContext().then(setContext);
-  }, []);
-
-  useEffect(() => {
-    const storeFixedData = async () => {
-      try {
-        await invoke('storeFixedMetrics');
-        console.log('Fixed metrics stored successfully');
-      } catch (err) {
-        console.error('Error storing fixed data:', err);
-        setError('Failed to store fixed metrics.');
-      }
-    };
-
-    storeFixedData();
-  }, []);
-
-  const logStoredMetricsAsTable = async () => {
+  
+  const storeAndLogMetrics = async () => {
     try {
-      const response = await invoke('getAllStoredMetrics');
-      if (response.status === 'ok') {
-        const metricEntries = Object.entries(response.data).map(([key, value]) => ({
-          Key: key,
-          CarbonEmissions: value.carbonEmissions,
-          EnergyUsed: value.energyUsed,
-          MemoryUsed: value.memoryUsed,
-          DataTransferred: value.dataTransferred,
-          Timestamp: new Date(value.timestamp).toLocaleString()
-        }));
+      await invoke('storeFixedMetrics');
+      console.log('✅ Fixed metrics stored');
 
-        console.table(metricEntries);
+      const res = await invoke('getAllStoredMetrics');
+      if (res.status === 'ok') {
+        const rows = Object.entries(res.data).map(([k, v]) => ({
+          Key: k,
+          CarbonEmissions: v.carbonEmissions,
+          EnergyUsed:      v.energyUsed,
+          MemoryUsed:      v.memoryUsed,
+          DataTransferred: v.dataTransferred,
+          Timestamp:       new Date(v.timestamp).toLocaleString()
+        }));
+        console.table(rows);
       }
-    } catch (err) {
-      console.error('Failed to fetch metrics:', err);
-      setError('Error fetching stored metrics.');
+    } catch (e) {
+      console.error('Store / log error:', e);
+      setError('Could not store or log metrics');
     }
   };
 
-  if (!context || !data) {
-    return <div style={styles.container}>Loading sustainability data...</div>;
-  }
+  const fetchAndShowMetrics = async () => {
+    try {
+      const res = await invoke('getAllStoredMetrics');
+      if (res.status === 'ok') {
+        const rows = Object.entries(res.data).map(([k, v]) => ({ key: k, ...v }));
+        setMetrics(rows);
+      } else {
+        setError('Failed to fetch metrics');
+      }
+    } catch (e) {
+      console.error('Fetch error:', e);
+      setError('Failed to fetch metrics');
+    }
+  };
+
+  if (!context || !hello) return <div style={styles.container}>Loading…</div>;
 
   return (
     <div style={styles.container}>
@@ -84,10 +82,36 @@ function View() {
           <p style={styles.caption}>Calculates equivalent offsets using tree-planting data</p>
         </div>
       </div>
-
-      <button onClick={logStoredMetricsAsTable} style={styles.button}>
-        Show Stored Metrics as Table
+      <button onClick={storeAndLogMetrics} style={styles.button}>
+        Store Fixed Metrics & Log Table
       </button>
+
+      <button onClick={fetchAndShowMetrics} style={styles.button}>
+        Show Stored Metrics in UI
+      </button>
+
+      {metrics.length > 0 && (
+        <table>
+          <thead>
+            <tr>
+              <th>Key</th><th>CO₂</th><th>Energy</th><th>Memory</th>
+              <th>Data Tx</th><th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metrics.map(m => (
+              <tr key={m.key}>
+                <td>{m.key}</td>
+                <td>{m.carbonEmissions}</td>
+                <td>{m.energyUsed}</td>
+                <td>{m.memoryUsed}</td>
+                <td>{m.dataTransferred}</td>
+                <td>{new Date(m.timestamp).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       {error && <div style={styles.error}>{error}</div>}
 
