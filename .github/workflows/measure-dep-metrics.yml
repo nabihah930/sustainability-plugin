@@ -18,7 +18,7 @@ jobs:
       ECO_CI_CALCULATE_CO2: "false"
       ECO_CI_CLONE_BRANCH: "main"
       ECO_CI_MACHINE_POWER_DATA: "gitlab_EPYC_7B12_saas-linux-small-amd64.sh"
-      ECO_CI_API_ENDPOINT_ADD: "https://webhook.site/cf18b7b0-ddad-4cc2-8a6e-fc7cdfc8f973"
+      ECO_CI_API_ENDPOINT_ADD: "https://webhook.site/ae676aed-e158-4cf4-beb1-dab35dec2773"
       ECO_CI_API_BADGE_GET: ""
       ECO_CI_DASHBOARD_URL: ""
       ECO_CI_GMT_API_TOKEN: ""
@@ -51,3 +51,10 @@ jobs:
         run: |
           /tmp/eco-ci-repo/scripts/display_results.sh display_results "${ECO_CI_DISPLAY_TABLE}" "${ECO_CI_DISPLAY_BADGE}"
           cat /tmp/eco-ci/output.txt
+
+      - name: Upload measurement results
+        uses: actions/upload-artifact@v3
+        with:
+          name: eco-ci-output
+          path: /tmp/eco-ci/output.txt
+
