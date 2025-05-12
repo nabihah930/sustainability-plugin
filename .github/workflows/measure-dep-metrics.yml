@@ -58,58 +58,73 @@ jobs:
             -H "Content-Type: text/plain" \
             --data-binary @/tmp/eco-ci/output.txt
 
-      # - name: Send detailed JSON results to webhook
+      # - name: Send complete measurement JSON to webhook
       #   run: |
-      #     # Extract measurement values (fallback to 0 if missing)
-      #     CO2=$(grep -oP 'CO2 Emissions: \K[0-9.]+' /tmp/eco-ci/output.txt || echo "0")
-      #     ENERGY=$(grep -oP 'Energy Used: \K[0-9.]+' /tmp/eco-ci/output.txt || echo "0")
-
-      #     # Add metadata from GitHub Actions environment
-      #     JOB_ID="${{ github.run_id }}"
-      #     COMMIT_SHA="${{ github.sha }}"
-      #     REPO="${{ github.repository }}"
-      #     BRANCH="${{ github.ref_name }}"
-      #     RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      #     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-      #     # Construct JSON
-      #     json=$(jq -n \
-      #       --arg co2 "$CO2" \
-      #       --arg energy "$ENERGY" \
-      #       --arg job_id "$JOB_ID" \
-      #       --arg sha "$COMMIT_SHA" \
-      #       --arg repo "$REPO" \
-      #       --arg branch "$BRANCH" \
-      #       --arg timestamp "$TIMESTAMP" \
-      #       --arg run_url "$RUN_URL" \
-      #       '{
-      #         repository: $repo,
-      #         branch: $branch,
-      #         commit_sha: $sha,
-      #         job_id: $job_id,
-      #         timestamp: $timestamp,
-      #         run_url: $run_url,
-      #         measurement: {
-      #           co2_grams: ($co2 | tonumber),
-      #           energy_kwh: ($energy | tonumber)
-      #         }
-      #       }')
-
-      #     echo "Sending payload to webhook:"
+      #     # Parse relevant rows from /tmp/eco-ci/output.txt
+      #     label_rows=$(grep -oP '<tr><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td></tr>' /tmp/eco-ci/output.txt)
+      
+      #     # Build base JSON template with GitHub variables
+      #     export REPO="${{ github.repository }}"
+      #     export BRANCH="${{ github.ref_name }}"
+      #     export COMMIT="${{ github.sha }}"
+      #     export JOB_ID="${{ github.run_id }}"
+      #     export RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      #     export TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+      
+      #     json=$(envsubst <<EOF
+      #     {
+      #       "repository": "$REPO",
+      #       "branch": "$BRANCH",
+      #       "commit_sha": "$COMMIT",
+      #       "job_id": "$JOB_ID",
+      #       "timestamp": "$TIMESTAMP",
+      #       "run_url": "$RUN_URL",
+      #       "measurements": []
+      #     }
+      #     EOF
+      #     )
+      
+      #     # Loop through table rows and append measurements
+      #     for row in $label_rows; do
+      #       label=$(echo "$row" | sed -n 's|.*<tr><td>\(.*\)</td><td>.*|\1|p')
+      #       cpu=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
+      #       energy=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
+      #       power=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
+      #       duration=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td></tr>.*|\1|p')
+      
+      #       if [[ -n "$label" ]]; then
+      #         measurement=$(jq -n \
+      #           --arg label "$label" \
+      #           --arg cpu "$cpu" \
+      #           --arg energy "$energy" \
+      #           --arg power "$power" \
+      #           --arg duration "$duration" \
+      #           '{
+      #             label: $label,
+      #             avg_cpu_utilization_percent: ($cpu | tonumber),
+      #             total_energy_joules: ($energy | tonumber),
+      #             avg_power_watts: ($power | tonumber),
+      #             duration_seconds: ($duration | tonumber)
+      #           }')
+      
+      #         json=$(echo "$json" | jq --argjson m "$measurement" '.measurements += [$m]')
+      #       fi
+      #     done
+      
+      #     echo "Final JSON payload:"
       #     echo "$json"
-
+      
       #     # Send to webhook
       #     curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
       #       -H "Content-Type: application/json" \
-      #       -d "$json"
-
+      #       --data "$json"
 
       - name: Send complete measurement JSON to webhook
         run: |
-          # Parse relevant rows from /tmp/eco-ci/output.txt
-          label_rows=$(grep -oP '<tr><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td></tr>' /tmp/eco-ci/output.txt)
+          # Create a clean list of <tr> rows with 5 <td> cells (data rows only)
+          data_rows=$(xmllint --html --xpath '//tr[count(td)=5]' /tmp/eco-ci/output.txt 2>/dev/null | grep -oP '(?<=<tr>).*?(?=</tr>)')
       
-          # Build base JSON template with GitHub variables
+          # Build base JSON
           export REPO="${{ github.repository }}"
           export BRANCH="${{ github.ref_name }}"
           export COMMIT="${{ github.sha }}"
@@ -130,14 +145,21 @@ jobs:
           EOF
           )
       
-          # Loop through table rows and append measurements
-          for row in $label_rows; do
-            label=$(echo "$row" | sed -n 's|.*<tr><td>\(.*\)</td><td>.*|\1|p')
-            cpu=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
-            energy=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
-            power=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td><td>.*|\1|p')
-            duration=$(echo "$row" | sed -n 's|.*<tr><td>.*</td><td>.*</td><td>.*</td><td>.*</td><td>\(.*\)</td></tr>.*|\1|p')
+          # Parse each row and extract cell values
+          echo "$data_rows" | while IFS= read -r row; do
+            fields=()
+            while [[ "$row" =~ <td>(.*?)</td> ]]; do
+              fields+=("${BASH_REMATCH[1]}")
+              row=${row#*</td>}
+            done
       
+            label="${fields[0]}"
+            cpu="${fields[1]}"
+            energy="${fields[2]}"
+            power="${fields[3]}"
+            duration="${fields[4]}"
+      
+            # Only add if label is not empty
             if [[ -n "$label" ]]; then
               measurement=$(jq -n \
                 --arg label "$label" \
@@ -147,10 +169,10 @@ jobs:
                 --arg duration "$duration" \
                 '{
                   label: $label,
-                  avg_cpu_utilization_percent: ($cpu | tonumber),
-                  total_energy_joules: ($energy | tonumber),
-                  avg_power_watts: ($power | tonumber),
-                  duration_seconds: ($duration | tonumber)
+                  avg_cpu_utilization_percent: ($cpu | test("N/A") | not ? ($cpu | tonumber) : null),
+                  total_energy_joules: ($energy | test("N/A") | not ? ($energy | tonumber) : null),
+                  avg_power_watts: ($power | test("N/A") | not ? ($power | tonumber) : null),
+                  duration_seconds: ($duration | test("N/A") | not ? ($duration | tonumber) : null)
                 }')
       
               json=$(echo "$json" | jq --argjson m "$measurement" '.measurements += [$m]')
