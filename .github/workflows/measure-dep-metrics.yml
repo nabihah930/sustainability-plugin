@@ -15,11 +15,9 @@ jobs:
       ECO_CI_FILTER_MACHINE: "saas-linux-small-amd64"
       ECO_CI_FILTER_TAGS: ""
       ECO_CI_JSON_OUTPUT: "false"
+      # For some reason the zone used in req is incorrect, hardcoded FI coordinates for correct req
       ECO_CI_GEO_LAT: 61.0466
       ECO_CI_GEO_LON: 28.0685
-      ECO_CI_LOCATION: "FI"
-      ECO_CI_FILTER_LOCATION: "FI"
-      ECO_CI_ZONE: "FI"
       ECO_CI_CALCULATE_CO2: "true"
       ECO_CI_CLONE_BRANCH: "main"
       ECO_CI_MACHINE_POWER_DATA: "gitlab_EPYC_7B12_saas-linux-small-amd64.sh"
