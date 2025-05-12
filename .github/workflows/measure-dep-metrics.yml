@@ -118,16 +118,16 @@ jobs:
           export TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
       
           json=$(envsubst <<EOF
-            {
-              "repository": "$REPO",
-              "branch": "$BRANCH",
-              "commit_sha": "$COMMIT",
-              "job_id": "$JOB_ID",
-              "timestamp": "$TIMESTAMP",
-              "run_url": "$RUN_URL",
-              "measurements": []
-            }
-            EOF
+          {
+            "repository": "$REPO",
+            "branch": "$BRANCH",
+            "commit_sha": "$COMMIT",
+            "job_id": "$JOB_ID",
+            "timestamp": "$TIMESTAMP",
+            "run_url": "$RUN_URL",
+            "measurements": []
+          }
+          EOF
           )
       
           # Loop through table rows and append measurements
