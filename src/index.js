@@ -104,3 +104,28 @@ resolver.define('submitChecklist', async ({ payload }) => {
 });
 
 export const handler = resolver.getDefinitions();
+
+export async function publicApiHandler(req) {
+  try {
+    const result = await storage.query().limit(100).getMany();
+    const metrics = result.results
+      .filter(item => item.key.startsWith('metrics_'))
+      .map(item => ({
+        key: item.key,
+        ...item.value,
+      }));
+
+    return {
+      statusCode: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'ok', data: metrics }),
+    };
+  } catch (err) {
+    console.error('Webtrigger error:', err);
+    return {
+      statusCode: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'error', message: 'Failed to fetch metrics' }),
+    };
+  }
+}

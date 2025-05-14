@@ -9,9 +9,16 @@ modules:
         function: resolver
       edit:
         resource: main
+  webtrigger:
+    - key: public-api-trigger
+      function: publicApi
+      response:
+        type: dynamic
   function:
     - key: resolver
       handler: index.handler
+    - key: publicApi
+      handler: index.publicApiHandler
 resources:
   - key: main
     path: static/hello-world/build
