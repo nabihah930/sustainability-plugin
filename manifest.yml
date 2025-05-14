@@ -6,20 +6,47 @@ modules:
       thumbnail: https://www.svgrepo.com/show/286077/sustainable-green.svg
       resource: main
       resolver:
-        function: resolver
+       function: resolver
       edit:
         resource: main
+  trigger:
+    - key: issue-updated-trigger
+      function: resolver
+      events:
+        - avi:jira:updated:issue
+  jira:issuePanel:
+    - key: accessibility-checklist-panel
+      resource: main
+      resolver:
+       function: resolver
+      title: Accessibility Checklist
+      icon: https://raw.githubusercontent.com/dpashkevich/forge-jira-checklist/master/src/images/checkbox.svg
+      layout: panel
+      tooltip: WCAG 2.1 Accessibility Checklist
+      target: page
+      type: full
+      weight: 50
+      context: ['issue']
   function:
     - key: resolver
-      handler: index.handler
+      handler: index.handler   
+    
 resources:
   - key: main
     path: static/hello-world/build
+
 permissions:
   content:
     styles:
       - unsafe-inline
+    scripts:
+      - unsafe-inline
+  scopes:
+    - 'read:jira-work'
+    - 'write:jira-work' 
+    - 'read:jira-user'
+    - 'storage:app'
 app:
   runtime:
     name: nodejs22.x
-  id: ari:cloud:ecosystem::app/a5d4b6d8-65a7-47db-b69a-5f91ff6999d9
+  id: ari:cloud:ecosystem::app/98b4c3cd-8fdf-42f7-9e94-4569543c9e32

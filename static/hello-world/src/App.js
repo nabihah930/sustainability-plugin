@@ -2,19 +2,58 @@ import React, { useEffect, useState } from 'react';
 import { view } from '@forge/bridge';
 import View from './View';
 import Edit from './Edit';
+import Panel from './panel';
 
 function App() {
   const [context, setContext] = useState();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    view.getContext().then(setContext);
+    const loadContext = async () => {
+      try {
+        const ctx = await view.getContext();
+        console.log("App Context:", ctx);
+        
+        // Always show panel if we're in an issue context
+        if (ctx?.platformContext?.issueKey || 
+            ctx?.extension?.issue?.key ||
+            window.location.href.match(/\/browse\/[A-Z][A-Z0-9_]+-[0-9]+/i)) {
+          setContext({ extension: { entryPoint: 'accessibility-checklist-panel' }});
+          return;
+        }
+
+        setContext(ctx);
+      } catch (err) {
+        console.error("Context error:", err);
+        setError(err.message);
+      }
+    };
+
+    loadContext();
   }, []);
 
-  if (!context) {
-    return 'Loading...';
+  if (error) {
+    return <div style={{color: 'red', padding: '10px'}}>Error: {error}</div>;
   }
 
-  return context.extension.entryPoint === 'edit' ? <Edit/> : <View/>;
+  if (!context) {
+    return <div style={{padding: '10px'}}>Loading...</div>;
+  }
+
+  // Show appropriate component based on module type
+  if (window.location.href.includes('accessibilityChecklist')) {
+    return <Panel />;
+  }
+
+  // routing
+  switch (context.extension.entryPoint) {
+    case 'edit':
+      return <Edit />;
+    case 'accessibility-checklist-panel':
+      return <Panel />;
+    default:
+      return <View />;
+  }
 }
 
 export default App;
