@@ -31,6 +31,65 @@ const styles = {
     fontSize: 13,
     marginTop: 4,
   },
+  summaryBox: {
+    marginTop: 40,
+    padding: 24,
+    border: '1px solid rgb(41 147 13)',
+    borderRadius: 12,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+  summaryHeading: {
+    marginBottom: 20,
+    color: '#2e7d32',
+    textAlign: 'center',
+    fontSize: '25px',
+    fontWeight: 'bold',
+  },
+  summaryTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '16px',
+  },
+  summaryRowTitle: {
+    fontWeight: 'bold',
+    padding: '8px 16px',
+    width: '40%',
+    verticalAlign: 'top',
+  },
+  summaryRowValue: {
+    padding: '8px 16px',
+  },
+energyNavContainer: {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: 25,
+  marginTop: 24,
+},
+
+energyButton: {
+  cursor: 'pointer',
+  fontSize: '35px',
+  border: 'none',
+  background: 'none',
+  flexShrink: 0,
+},
+
+energyMessageWrapper: {
+  width: '400px',
+  textAlign: 'center',
+},
+
+energyMessage: {
+  fontSize: 16,
+  fontStyle: 'italic',
+  whiteSpace: 'normal',
+  wordWrap: 'break-word',
+  marginTop:'5px'
+},
+
+
 };
 
 export default styles;

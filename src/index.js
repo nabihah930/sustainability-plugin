@@ -166,5 +166,72 @@ resolver.define("saveChecks", async ({ payload }) => {
   );
   return { success: true };
 });
+// resolvers/index.js
+resolver.define('isSprintCompleted', async () => {
+  const boardId = 67; // your board id
+  try {
+    const res = await api.asApp().requestJira(
+      route`/rest/agile/1.0/board/${boardId}/sprint?state=active,closed`
+    );
+
+    const text = await res.text();
+    console.log('Raw board/sprint API response:', text);
+
+    if (!res.ok) {
+      console.error('Failed to fetch sprints:', text);
+      return { error: 'Failed to fetch sprints' };
+    }
+
+    const data = JSON.parse(text);
+
+    if (data.values.length === 0) {
+      return { message: 'No sprints found for board' };
+    }
+
+    const latestSprint = data.values[data.values.length - 1];
+
+    return {
+      sprintName: latestSprint.name,
+      sprintId: latestSprint.id,
+      sprintState: latestSprint.state,
+      isCompleted: latestSprint.state === 'closed',
+    };
+  } catch (err) {
+    console.error('Error fetching sprint status:', err);
+    return { error: 'Exception thrown during fetch' };
+  }
+});
+resolver.define('getSprintDetails', async () => {
+  const sprintId = 67; //replace
+
+  try {
+    const res = await api.asApp().requestJira(
+      route`/rest/agile/1.0/sprint/${sprintId}`
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Failed to fetch sprint details:', text);
+      return { error: 'Failed to fetch sprint details' };
+    }
+
+    const data = await res.json();
+
+    return {
+      id: data.id,
+      name: data.name,
+      state: data.state,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      completeDate: data.completeDate,
+      goal: data.goal,
+      boardId: data.originBoardId,
+    };
+  } catch (err) {
+    console.error('Error fetching sprint details:', err);
+    return { error: 'Exception occurred while fetching sprint details' };
+  }
+});
+
 
 export const handler = resolver.getDefinitions();
