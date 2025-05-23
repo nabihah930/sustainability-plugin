@@ -6,7 +6,7 @@ modules:
       thumbnail: https://www.svgrepo.com/show/286077/sustainable-green.svg
       resource: main
       resolver:
-       function: resolver
+        function: resolver
       edit:
         resource: main
   trigger:
@@ -18,7 +18,7 @@ modules:
     - key: accessibility-checklist-panel
       resource: main
       resolver:
-       function: resolver
+        function: resolver
       title: Accessibility Checklist
       icon: https://raw.githubusercontent.com/dpashkevich/forge-jira-checklist/master/src/images/checkbox.svg
       layout: panel
@@ -26,13 +26,23 @@ modules:
       target: page
       type: full
       weight: 50
-      context: ['issue']
+      context: ["issue"]
+  jira:globalPage:
+    - key: sustainability-sidebar-icon
+      resource: sidebar
+      resolver:
+        function: resolver
+      title: Sustainability Metrics
+      icon: https://www.svgrepo.com/show/530113/tree.svg
+
   function:
     - key: resolver
-      handler: index.handler   
-    
+      handler: index.handler
+
 resources:
   - key: main
+    path: static/hello-world/build
+  - key: sidebar
     path: static/hello-world/build
 
 permissions:
@@ -42,10 +52,10 @@ permissions:
     scripts:
       - unsafe-inline
   scopes:
-    - 'read:jira-work'
-    - 'write:jira-work' 
-    - 'read:jira-user'
-    - 'storage:app'
+    - "read:jira-work"
+    - "write:jira-work"
+    - "read:jira-user"
+    - "storage:app"
 app:
   runtime:
     name: nodejs22.x
