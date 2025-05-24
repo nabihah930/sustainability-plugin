@@ -9,8 +9,12 @@ function View() {
   const [context, setContext] = useState();
   const [data, setData] = useState(null);
   const [sprint, setSprint] = useState(null);
+  const [closedSprints, setClosedSprints] = useState([]);
+  const [selectedSprintId, setSelectedSprintId] = useState(null);
   const [energyMessages, setEnergyMessages] = useState([]);
   const [currentMsgIndex, setCurrentMsgIndex] = useState(0);
+  const [storyPoints, setStoryPoints] = useState(null);
+  const [fields, setFields] = useState([]);
 
   const getEnergyEquivalentMessages = (energyKWh) => {
     if (!energyKWh || energyKWh <= 0) {
@@ -32,16 +36,53 @@ function View() {
     ];
   };
 
+  
+  // Fetch sprint details and set energy messages dynamically
+ const fetchSprintDetails = async (sprintId) => {
+  try {
+    const details = await invoke('getSprintDetails', { sprintId });
+    setSprint(details);
+
+    // Fetch story points
+    const spResult = await invoke('getSprintStoryPoints', { sprintId });
+    const totalStoryPoints = spResult?.totalStoryPoints ?? 0;
+    setStoryPoints(totalStoryPoints);  // <-- Add this state to render
+    console.log(spResult,"avjhbk")
+    const totalEnergy = details?.totalEnergy || 8;
+    setEnergyMessages(getEnergyEquivalentMessages(totalEnergy));
+    setCurrentMsgIndex(0);
+  } catch (error) {
+    console.error("Error fetching sprint details:", error);
+  }
+};
+
+
+
   const checkSprint = async () => {
-    const result = await invoke('isSprintCompleted');
-    console.log('Sprint check result:', result);
-    if (result?.sprintId) {
-      const details = await invoke('getSprintDetails', { sprintId: result.sprintId });
-      console.log(details, "Sprint Details");
-      setSprint(details);
-      const energyKWh = 8; 
-      setEnergyMessages(getEnergyEquivalentMessages(energyKWh));
+    try {
+      const result = await invoke('isSprintCompleted');
+      if (result?.sprintId) {
+        setClosedSprints(result.closedSprints || []);
+
+        // Use the latest closed sprint as the default selected sprint
+        const latestClosed = result.latestClosedSprint;
+        if (latestClosed) {
+          setSelectedSprintId(latestClosed.id);
+          await fetchSprintDetails(latestClosed.id);
+        } else {
+          // Fallback to active or latest sprint if no closed sprint
+          setSelectedSprintId(result.sprintId);
+          await fetchSprintDetails(result.sprintId);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching sprint data:", error);
     }
+  };
+const handleSprintChange = async (e) => {
+    const sprintId = e.target.value;
+    setSelectedSprintId(sprintId);
+    await fetchSprintDetails(sprintId);
   };
 
   useEffect(() => {
@@ -55,7 +96,21 @@ function View() {
   useEffect(() => {
     view.getContext().then(setContext);
   }, []);
+useEffect(() => {
+    const fetchFields = async () => {
+      try {
+        const result = await invoke('getFields');
+        console.log(result); // Already logging the result
+        setFields(result);
+      } catch (error) {
+        console.error('Error fetching fields:', error);
+      }
+    };
 
+    fetchFields();
+  }, []);
+  const [points, setPoints] = useState(null);
+  const [loading, setLoading] = useState(true);
   const prevMessage = () => {
     setCurrentMsgIndex((idx) => (idx === 0 ? energyMessages.length - 1 : idx - 1));
   };
@@ -100,58 +155,62 @@ function View() {
       </div>
 
      <div style={styles.summaryBox}>
-  <h3 style={styles.summaryHeading}>📋 Sprint Summary</h3>
-  <table style={styles.summaryTable}>
-    <tbody>
-      <tr>
-        <td style={styles.summaryRowTitle}>Sprint Name:</td>
-        <td style={styles.summaryRowValue}>{sprint.name}</td>
-      </tr>
-      <tr>
-        <td style={styles.summaryRowTitle}>Sprint ID:</td>
-        <td style={styles.summaryRowValue}>{sprint.id}</td>
-      </tr>
-      <tr>
-        <td style={styles.summaryRowTitle}>Duration:</td>
-        <td style={styles.summaryRowValue}>
-          {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
-        </td>
-      </tr>
-      <tr>
-        <td style={styles.summaryRowTitle}>Completed Story Points:</td>
-        <td style={styles.summaryRowValue}>45 (example value)</td>
-      </tr>
-      <tr>
-        <td style={styles.summaryRowTitle}>Goal:</td>
-        <td style={styles.summaryRowValue}>{sprint.goal || "No goal defined for this sprint."}</td>
-      </tr>
-    </tbody>
-  </table>
+        <h3 style={styles.summaryHeading}>📋 Sprint Summary</h3>
+        {closedSprints.length > 0 && (
+          <>
+            <span style={{ fontStyle: 'italic', color: '#666' }}>
+              (Latest closed sprint: {closedSprints[closedSprints.length - 1].name})
+            </span>
+            <select
+              value={selectedSprintId}
+              onChange={handleSprintChange}
+              aria-label="Select sprint report"
+              style={{ marginLeft: 'auto', padding: '4px 8px', fontSize: '14px' }}
+            >
+              {closedSprints.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
 
-  <div style={styles.energyNavContainer}>
-    <button 
-      onClick={prevMessage} 
-      aria-label="Previous energy message" 
-      style={styles.energyButton}
-    >
-      ←
-    </button>
+      {/* Existing sprint summary table */}
+      <table style={styles.summaryTable}>
+        <tbody>
+          <tr>
+            <td style={styles.summaryRowTitle}>Sprint Name:</td>
+            <td style={styles.summaryRowValue}>{sprint.name}</td>
+          </tr>
+          <tr>
+            <td style={styles.summaryRowTitle}>Sprint ID:</td>
+            <td style={styles.summaryRowValue}>{sprint.id}</td>
+          </tr>
+          <tr>
+            <td style={styles.summaryRowTitle}>Duration:</td>
+            <td style={styles.summaryRowValue}>
+              {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+            </td>
+          </tr>
+          <tr>
+            <td style={styles.summaryRowTitle}>Completed Story Points:</td>
+            <td style={styles.summaryRowValue}>{storyPoints !== null ? storyPoints : 'Not Found'}</td>
+          </tr>
+          <tr>
+            <td style={styles.summaryRowTitle}>Goal:</td>
+            <td style={styles.summaryRowValue}>{sprint.goal || "No goal defined for this sprint."}</td>
+          </tr>
+        </tbody>
+      </table>
 
-    <div style={styles.energyMessageWrapper}>
-    <span style={styles.energyMessage}>
-      {energyMessages[currentMsgIndex]}
-    </span>
-  </div>
-
-    <button 
-      onClick={nextMessage} 
-      aria-label="Next energy message" 
-      style={styles.energyButton}
-    >
-      →
-    </button>
-  </div>
-</div>
+      {/* Energy nav and message as before */}
+      <div style={styles.energyNavContainer}>
+        <button onClick={prevMessage} aria-label="Previous energy message" style={styles.energyButton}>←</button>
+        <div style={styles.energyMessageWrapper}>
+          <span style={styles.energyMessage}>{energyMessages[currentMsgIndex]}</span>
+        </div>
+        <button onClick={nextMessage} aria-label="Next energy message" style={styles.energyButton}>→</button>
+      </div>
 
 
     </div>

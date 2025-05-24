@@ -47,6 +47,9 @@ permissions:
     - 'read:jira-user'
     - 'storage:app'
     - 'read:sprint:jira-software'
+    - 'read:issue:jira-software'
+    - 'read:board-scope:jira-software'
+    - 'read:issue-details:jira'
 app:
   runtime:
     name: nodejs22.x

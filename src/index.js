@@ -190,19 +190,26 @@ resolver.define('isSprintCompleted', async () => {
 
     const latestSprint = data.values[data.values.length - 1];
 
+    // Also gather closed sprints for dropdown
+    const closedSprints = data.values.filter(s => s.state === 'closed');
+
     return {
       sprintName: latestSprint.name,
       sprintId: latestSprint.id,
       sprintState: latestSprint.state,
       isCompleted: latestSprint.state === 'closed',
+      closedSprints,
+      latestClosedSprint: closedSprints.length ? closedSprints[closedSprints.length - 1] : null,
     };
   } catch (err) {
     console.error('Error fetching sprint status:', err);
     return { error: 'Exception thrown during fetch' };
   }
 });
-resolver.define('getSprintDetails', async () => {
-  const sprintId = 67; //replace
+
+// getSprintDetails - fetch sprint by id dynamically
+resolver.define('getSprintDetails', async ({ payload }) => {
+  const { sprintId } = payload;
 
   try {
     const res = await api.asApp().requestJira(
@@ -232,6 +239,52 @@ resolver.define('getSprintDetails', async () => {
     return { error: 'Exception occurred while fetching sprint details' };
   }
 });
+
+resolver.define('getFields', async () => {
+  const res = await api.asApp().requestJira(
+    route`/rest/api/3/field`
+  );
+  const fields = await res.json();
+  return fields.filter(f => f.name.toLowerCase().includes('story') || f.name.toLowerCase().includes('point'));
+});
+
+
+resolver.define('getSprintStoryPoints', async ({ payload }) => {
+  const { sprintId } = payload;
+
+  try {
+    const res = await api.asApp().requestJira(
+      route`/rest/agile/1.0/sprint/${sprintId}/issue`
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Failed to fetch issues:', text);
+      return { error: 'Failed to fetch issues for sprint' };
+    }
+
+    const data = await res.json();
+
+    // Extract story points from each issue
+    const issues = data.issues || [];
+
+    // Replace with your actual story point field (check your customfield ID)
+    const STORY_POINT_FIELD = 'customfield_10016';
+
+    const totalStoryPoints = issues.reduce((sum, issue) => {
+      const points = issue.fields?.[STORY_POINT_FIELD];
+      return sum + (typeof points === 'number' ? points : 0);
+    }, 0);
+
+    return { totalStoryPoints, issueCount: issues.length };
+  } catch (err) {
+    console.error('Error fetching sprint issues:', err);
+    return { error: 'Exception occurred while fetching sprint issues' };
+  }
+});
+
+
+
 
 
 export const handler = resolver.getDefinitions();
