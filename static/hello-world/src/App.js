@@ -41,6 +41,9 @@ function App() {
   }
 
   // Show appropriate component based on module type
+  if (window.location.pathname.includes('/global/sustainability-sidebar-icon')) {
+    return <View />;
+  }
   if (window.location.href.includes('accessibilityChecklist')) {
     return <Panel />;
   }
