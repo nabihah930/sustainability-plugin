@@ -254,42 +254,52 @@ resolver.define("getIssueStatus", async ({ payload }) => {
   }
 });
 
-// Load any saved checklist state from issue properties
+// Load any saved checklist state from Forge storage (instead of Jira issue properties)
 resolver.define("getSavedChecks", async ({ payload }) => {
   const { issueKey } = payload;
-  
   try {
-    const res = await api.asApp().requestJira(
-      route`/rest/api/3/issue/${issueKey}/properties/accessibilityChecklist`
-    );
-    
-    if (res.status === 404) {
-      return {}; // No saved checks yet
-    }
-    
-    if (!res.ok) {
-      throw new Error(`Failed to fetch saved checks: ${res.status}`);
-    }
-    
-    const { value } = await res.json();
-    return value || {};
+    const checks = await storage.get(`checklist-${issueKey}`);
+    return checks || {};
   } catch (error) {
     console.error('Error getting saved checks:', error);
     throw error;
   }
 });
 
-// Persist checklist state back into issue properties
+// Persist checklist state into Forge storage 
 resolver.define("saveChecks", async ({ payload }) => {
   const { issueKey, checklist } = payload;
-  await api.asApp().requestJira(
-    route`/rest/api/3/issue/${issueKey}/properties/accessibilityChecklist`,
-    {
-      method: "PUT",
-      body: JSON.stringify(checklist),
-    }
-  );
+  await storage.set(`checklist-${issueKey}`, checklist);
+  console.log(`Saved checklist for ${issueKey}:`, checklist);
   return { success: true };
+});
+
+// Load checklist submitted state from Forge storage
+resolver.define("getChecklistSubmitted", async ({ payload }) => {
+  const { issueKey } = payload;
+  try {
+    const submitted = await storage.get(`accessibilityChecklistSubmitted-${issueKey}`);
+    return { submitted: Boolean(submitted) };
+  } catch (error) {
+    console.error('Error getting checklist submitted state:', error);
+    return { submitted: false };
+  }
+});
+
+// Mark checklist as submitted and save checks in Forge storage
+resolver.define("submitChecklist", async ({ payload }) => {
+  const { issueKey, checklist } = payload;
+  try {
+    // Save the checklist in Forge storage
+    await storage.set(`checklist-${issueKey}`, checklist);
+    // Mark as submitted in Forge storage
+    await storage.set(`accessibilityChecklistSubmitted-${issueKey}`, true);
+    console.log(`Checklist submitted for ${issueKey}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error submitting checklist:', error);
+    throw error;
+  }
 });
 
 export const handler = resolver.getDefinitions();

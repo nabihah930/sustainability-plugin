@@ -59,6 +59,7 @@ export default function Panel() {
   const [checks, setChecks] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     const initializePanel = async () => {
@@ -105,10 +106,11 @@ export default function Panel() {
 
         setIssueKey(key);
 
-        // Get status and checks in parallel
-        const [statusResult, checksResult] = await Promise.all([
+        // Get status, checks, and submitted state in parallel
+        const [statusResult, checksResult, submittedResult] = await Promise.all([
           invoke('getIssueStatus', { issueKey: key }),
-          invoke('getSavedChecks', { issueKey: key })
+          invoke('getSavedChecks', { issueKey: key }),
+          invoke('getChecklistSubmitted', { issueKey: key })
         ]);
 
         console.log('Status result:', statusResult);
@@ -116,7 +118,7 @@ export default function Panel() {
 
         setStatus(statusResult);
         setChecks(checksResult || {});
-
+        setSubmitted(Boolean(submittedResult && submittedResult.submitted));
       } catch (err) {
         console.error('Panel initialization failed:', err);
         setError(err.message);
@@ -128,23 +130,41 @@ export default function Panel() {
     initializePanel();
   }, []);
 
-  const handleReadAll = async () => {
-    // Create object with all items checked
+  // Prevent any further changes if submitted
+  const handleCheckChange = (itemId, checked) => {
+    if (submitted) return; // Prevent changes if already submitted
+    const next = { ...checks, [itemId]: checked };
+    setChecks(next);
+    invoke("saveChecks", {
+      issueKey,
+      checklist: next,
+    });
+  };
+
+  const handleReadAll = () => {
+    if (submitted) return; // Prevent changes if already submitted
     const allChecked = CHECKLIST_ITEMS.reduce((acc, item) => {
       acc[item.id] = true;
       return acc;
     }, {});
-    
     setChecks(allChecked);
-    
-    // Save to backend
+    invoke("saveChecks", {
+      issueKey,
+      checklist: allChecked,
+    });
+  };
+
+  const handleSubmitChecklist = async (e) => {
+    e.preventDefault();
+    if (submitted) return; // Prevent double submission
     try {
-      await invoke("saveChecks", {
+      await invoke("submitChecklist", {
         issueKey,
-        checklist: allChecked,
+        checklist: checks,
       });
+      setSubmitted(true);
     } catch (err) {
-      console.error('Failed to save all checks:', err);
+      setError("Failed to submit checklist: " + err.message);
     }
   };
 
@@ -175,65 +195,88 @@ export default function Panel() {
     );
   }
 
-  // render the actual checklist
+  // render the actual checklist 
   return (
     <div style={{ padding: "16px", fontFamily: "inherit" }}>
       <h3>Accessibility Checklist</h3>
-      {CHECKLIST_ITEMS.map((item) => (
-        <div
-          key={item.id}
+      <form onSubmit={handleSubmitChecklist}>
+        {CHECKLIST_ITEMS.map((item) => (
+          <div
+            key={item.id}
+            style={{
+              marginBottom: "16px",
+              padding: "12px",
+              border: "1px solid #dfe1e6",
+              borderRadius: "3px",
+              backgroundColor: checks[item.id] ? "#f4f5f7" : "white",
+              opacity: submitted ? 0.6 : 1 // Visually indicate disabled state
+            }}
+          >
+            <label style={{ display: "block", cursor: submitted ? "not-allowed" : "pointer" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(checks[item.id])}
+                disabled={submitted}
+                onChange={(e) => handleCheckChange(item.id, e.target.checked)}
+                style={{ marginRight: "8px" }}
+              />
+              <strong>{item.id}</strong>
+            </label>
+            <p style={{
+              margin: "8px 0 0 24px",
+              color: "#5e6c84",
+              fontSize: "13px"
+            }}>
+              {item.description}
+            </p>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={handleReadAll}
+          disabled={submitted}
           style={{
-            marginBottom: "16px",
-            padding: "12px",
-            border: "1px solid #dfe1e6",
+            marginTop: "20px",
+            padding: "8px 16px",
+            backgroundColor: submitted ? "#ccc" : "#0052CC",
+            color: "white",
+            border: "none",
             borderRadius: "3px",
-            backgroundColor: checks[item.id] ? "#f4f5f7" : "white"
+            cursor: submitted ? "not-allowed" : "pointer",
+            fontSize: "14px",
+            fontWeight: "500"
+          }}
+          onMouseOver={(e) => { if (!submitted) e.target.style.backgroundColor = "#0065FF"; }}
+          onMouseOut={(e) => { if (!submitted) e.target.style.backgroundColor = "#0052CC"; }}
+        >
+          Read all criteria points
+        </button>
+
+        <br />
+        <button
+          type="submit"
+          disabled={submitted}
+          style={{
+            marginTop: "20px",
+            padding: "8px 16px",
+            backgroundColor: submitted ? "#ccc" : "#36B37E",
+            color: "white",
+            border: "none",
+            borderRadius: "3px",
+            cursor: submitted ? "not-allowed" : "pointer",
+            fontSize: "14px",
+            fontWeight: "500"
           }}
         >
-          <label style={{ display: "block", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={Boolean(checks[item.id])}
-              onChange={(e) => {
-                const next = { ...checks, [item.id]: e.target.checked };
-                setChecks(next);
-                invoke("saveChecks", {
-                  issueKey,
-                  checklist: next,
-                });
-              }}
-              style={{ marginRight: "8px" }}
-            />
-            <strong>{item.id}</strong>
-          </label>
-          <p style={{ 
-            margin: "8px 0 0 24px", 
-            color: "#5e6c84",
-            fontSize: "13px" 
-          }}>
-            {item.description}
-          </p>
+          {submitted ? "Checklist Submitted" : "Submit Checklist"}
+        </button>
+      </form>
+      {submitted && (
+        <div style={{ marginTop: "16px", color: "#36B37E", fontWeight: "bold" }}>
+          Checklist has been submitted and saved for this issue.
         </div>
-      ))}
-      
-      <button
-        onClick={handleReadAll}
-        style={{
-          marginTop: "20px",
-          padding: "8px 16px",
-          backgroundColor: "#0052CC",
-          color: "white",
-          border: "none",
-          borderRadius: "3px",
-          cursor: "pointer",
-          fontSize: "14px",
-          fontWeight: "500"
-        }}
-        onMouseOver={(e) => e.target.style.backgroundColor = "#0065FF"}
-        onMouseOut={(e) => e.target.style.backgroundColor = "#0052CC"}
-      >
-        Read all criteria points
-      </button>
+      )}
     </div>
   );
 }
