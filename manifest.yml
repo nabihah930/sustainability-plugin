@@ -38,6 +38,7 @@ modules:
         function: resolver
       title: Sustainability Metrics
       icon: https://www.svgrepo.com/show/530113/tree.svg
+      context: ["issue"]
 
   function:
     - key: resolver
