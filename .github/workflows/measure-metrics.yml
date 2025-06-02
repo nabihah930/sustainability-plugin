@@ -58,11 +58,11 @@ jobs:
           /tmp/eco-ci-repo/scripts/display_results.sh display_results "${ECO_CI_DISPLAY_TABLE}" "${ECO_CI_DISPLAY_BADGE}"
           cat /tmp/eco-ci/output.txt
 
-      - name: Send simple measurement results to webhook
+      - name: Send measurement results to proxy-server
         run: |
           curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
-            -H "Content-Type: text/plain" \
-            --data-binary @/tmp/eco-ci/output.txt
+            -H "Content-Type: application/json" \
+            --data @/tmp/eco-ci/output.txt
             
       - name: Convert HTML table to enriched JSON (with metadata) & send to webhook
         run: |
