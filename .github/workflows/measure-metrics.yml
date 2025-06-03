@@ -24,7 +24,7 @@ jobs:
       ECO_CI_CALCULATE_CO2: "true"
       ECO_CI_CLONE_BRANCH: "main"
       ECO_CI_MACHINE_POWER_DATA: "gitlab_EPYC_7B12_saas-linux-small-amd64.sh"
-      ECO_CI_API_ENDPOINT_ADD: "https://webhook.site/de943bbc-dd0c-47f4-b994-9f183ee06162"
+      ECO_CI_API_ENDPOINT_ADD: "https://sustainability-proxy.onrender.com/metrics"
       ECO_CI_API_BADGE_GET: ""
       ECO_CI_DASHBOARD_URL: ""
       ECO_CI_GMT_API_TOKEN: ""
@@ -57,14 +57,8 @@ jobs:
         run: |
           /tmp/eco-ci-repo/scripts/display_results.sh display_results "${ECO_CI_DISPLAY_TABLE}" "${ECO_CI_DISPLAY_BADGE}"
           cat /tmp/eco-ci/output.txt
-
-      - name: Send simple measurement results to webhook
-        run: |
-          curl -X POST "${ECO_CI_API_ENDPOINT_ADD}" \
-            -H "Content-Type: text/plain" \
-            --data-binary @/tmp/eco-ci/output.txt
             
-      - name: Convert HTML table to enriched JSON (with metadata) & send to webhook
+      - name: Convert HTML table to enriched JSON (with metadata) & send to proxy-server
         run: |
           {
             echo '{'
@@ -72,7 +66,6 @@ jobs:
             echo "  \"action\": \"${{ github.action }}\","
             echo "  \"actor\": \"${{ github.actor }}\","
             echo "  \"branch\": \"${{ github.ref_name }}\","
-            echo "  \"ticket\": \"${{ github.ref_name }}\","
             echo "  \"commit_sha\": \"${{ github.sha }}\","
             echo "  \"job_id\": \"${{ github.run_id }}\","
             echo "  \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\","

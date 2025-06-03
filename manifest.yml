@@ -1,4 +1,9 @@
 modules:
+  webtrigger:
+    - key: metrics-web-trigger
+      function: web-trigger
+      response: # Dynamic web triggers do not need to define a response field and are dynamic by default.
+        type: dynamic
   jira:dashboardGadget:
     - key: sustainability-plugin-gadget
       title: Green Track 🌳
@@ -43,6 +48,8 @@ modules:
   function:
     - key: resolver
       handler: index.handler
+    - key: web-trigger
+      handler: web-trigger.storeMetrics
 
 resources:
   - key: main
@@ -67,6 +74,10 @@ permissions:
     - 'read:confluence-user'
     - 'write:page:confluence'
     - 'read:space:confluence'
+    - 'read:sprint:jira-software'
+    - 'read:issue:jira-software'
+    - 'read:board-scope:jira-software'
+    - 'read:issue-details:jira'
 app:
   runtime:
     name: nodejs22.x
