@@ -1,18 +1,57 @@
-import { route, storage } from "@forge/api";
-import api from "@forge/api";
 import Resolver from '@forge/resolver';
+import api, { route, storage } from "@forge/api";
+import { kvs, WhereConditions } from '@forge/kvs';
+import { aggregateSprintMetrics } from "./util/helper";
 
 const resolver = new Resolver();
-
-resolver.define('getText', (req) => {
-  console.log(req);
-
-  return 'Hello world!';
-});
 
 // In-memory storage simulation (replace with Forge storage API or external DB in prod)
 let metricsData = [];
 
+resolver.define('getSprintMetrics', async () => {
+  try {
+    // TO-DO: Move from legacy storage module to forge KVS (potentially breaking change)
+    const activeSprint = await storage.get("sprint-active");
+    if (!activeSprint || !activeSprint.sprintId) {
+      throw new Error("No active sprint saved");
+    }
+
+    const sprintId = activeSprint.sprintId;
+    const aggregateMetricsKey = `sprint-${sprintId}-metrics`;
+    // Do I need a new key to cache metrics for every sprint or can I have one key to store current sprint cache?
+    const timestampKey = `${aggregateMetricsKey}-timestamp`;
+    const now = Date.now();
+    const cacheTTL = 5 * 60 * 1000; // 5 minutes
+    const lastUpdated = await storage.get(timestampKey);
+  
+    if (lastUpdated && now - lastUpdated < cacheTTL) {
+      const cached = await storage.get(aggregateMetricsKey);
+      return cached;
+    }
+  
+    const devMetrics = await kvs.query()
+    .where('key', WhereConditions.beginsWith(`sprint-${sprintId}-metrics-dev-`)).getMany();
+  
+    const allDevMetrics = [];
+  
+    for (const devMetric of devMetrics.results) {
+      const devMetricArray = devMetric.value;
+      allDevMetrics.push(devMetricArray);
+    }
+  
+    const aggregated = aggregateSprintMetrics(allDevMetrics);
+  
+    await storage.set(aggregateMetricsKey, aggregated);
+    await storage.set(timestampKey, now);
+
+    return aggregated;
+  } catch (err) {
+    console.error("Error aggregating sprint metrics: ", err.message);
+    return {};
+  }
+});
+
+// TO-DO: Delete this resolver since submit metrics handled by web trigger 
 // POST /metrics - Accept sustainability metrics
 resolver.define('submitMetrics', async ({ payload }) => {
   const { sprintId, carbonEmissions, energyUsed, memoryUsed, dataTransferred } = payload;
@@ -166,6 +205,59 @@ resolver.define("onSprintClosed", async ({ payload }) => {
   } catch (err) {
     console.log(`❌ Error creating page on Confluene: ${err}`);
     throw err;
+  }
+});
+
+// Get current active sprint for a Project
+resolver.define('getCurrentSprint', async () => {
+  try {
+    // TO-DO: Move hard-coded values to a constants file
+    const res = await api.asApp().requestJira(
+      route`/rest/agile/1.0/board/34/sprint?state=active`
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Failed to fetch active sprint for project:', text);
+      return { error: 'Failed to fetch active sprint for project' };
+    }
+
+    const data = await res.json();
+
+    if (data.total === 0) {
+      return { message: 'No active sprints found for the board' };
+    }
+
+    return {
+      sprintId: data.values[0].id,
+      state: data.values[0].state,
+      name: data.values[0].name,
+      startDate: data.values[0].startDate,
+      endDate: data.values[0].endDate,
+      goal: data.values[0].goal,
+      createdAt: data.values[0].createdDate,
+      boardId: data.values[0].originBoardId
+    };
+  } catch (err) {
+    console.error('Error fetching current sprint:', err);
+    return { error: 'Exception occurred while fetching current sprint' };
+  }
+});
+
+// Store sprint details
+resolver.define('storeSprintDetails', async ({ payload }) => {
+  try {
+    // Constructing unique key following key naming strategy
+    const key = `sprint-${payload.sprintId}-details`;
+    await storage.set(key, payload);
+  
+    return { status: 'OK', message: `Sprint details stored! [${key}]` };
+  } catch (err) {
+    console.error(`Error saving sprint details: `, err);
+    return {
+      message: 'Exception occurred while saving sprint details',
+      err
+    };
   }
 });
 

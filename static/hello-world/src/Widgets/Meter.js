@@ -1,20 +1,20 @@
-import { useEffect, useRef } from "react";
 import Lottie from "lottie-react";
-import animationData from "../lottie/AnimationBattery.json";
-import { MAX_JOULES } from "../util/constants";
+import { useEffect, useRef } from "react";
+import animationData from "../lottie/AnimationMeter.json";
 
-function EnergyWidget({ totalEnergyJoules }) {
+function MeterWidget({ totalCPUpercent }) {
     const lottieRef = useRef();
-    const maxFrame = 420;
+    const maxFrame = 136;
 
     useEffect(() => {
         if (lottieRef.current) {
-            const clampedJoules = Math.min(totalEnergyJoules || 0, MAX_JOULES);
-            const targetFrame = Math.floor((clampedJoules / MAX_JOULES) * maxFrame);
+            const clampedUtilization = Math.min(totalCPUpercent || 0, 100);
+            const targetFrame = Math.floor((clampedUtilization / 100) * maxFrame);
+            lottieRef.current.setSpeed(0.5);
             lottieRef.current.playSegments([0, targetFrame], true);
         }
-    }, [totalEnergyJoules]);
-
+    }, [totalCPUpercent]);
+    
     return (
         <div style={{ width: 200, height: 200 }}>
             <Lottie
@@ -27,4 +27,4 @@ function EnergyWidget({ totalEnergyJoules }) {
     );
 }
 
-export default EnergyWidget;
+export default MeterWidget;
