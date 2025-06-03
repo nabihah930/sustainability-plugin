@@ -4,7 +4,7 @@ import animationData from "../lottie/AnimationBigTree.json"
 function BigTreeWidget() {
     return (
         <div style={{ width: 200, height: 200 }}>
-            <Lottie animationData={animationData} loop={true} />
+            <Lottie animationData={animationData} loop={false} />
         </div>
     );
 }

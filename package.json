@@ -9,6 +9,7 @@
     "eslint-plugin-react-hooks": "^4.6.0"
   },
   "dependencies": {
+    "@forge/kvs": "^0.1.3",
     "@forge/resolver": "^1.6.9",
     "@forge/ui": "^1.11.3",
     "lottie-react": "^2.4.1"
