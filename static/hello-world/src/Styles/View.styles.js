@@ -31,6 +31,20 @@ const styles = {
     fontSize: 13,
     marginTop: 4,
   },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginBottom: '24px',
+  },
+  tableRow: {
+    // borderBottom: '1px solid #ccc',
+  },
+  tableCell: {
+    padding: '8px 12px',
+    textAlign: 'center',
+    justifyContent: 'center',
+    fontSize: 18,
+  },
 };
 
 export default styles;

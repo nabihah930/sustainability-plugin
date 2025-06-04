@@ -261,6 +261,21 @@ resolver.define('storeSprintDetails', async ({ payload }) => {
   }
 });
 
+resolver.define("getSprintDetails", async () => {
+  try {
+    const activeSprint = await storage.get("sprint-active");
+    
+    if (!activeSprint || !activeSprint?.sprintId) {
+      throw new Error("No active sprint saved.");
+    }
+    const sprintDetails = await storage.get(`sprint-${activeSprint.sprintId}-details`);
+    return sprintDetails;
+  } catch (err) {
+    console.error("Error gettign sprint details: ", err.message);
+    return {};
+  }
+});
+
 // onIssueDone function to handle issue updates
 resolver.define("onIssueDone", async ({ payload }) => {
   const { issue, changelog } = payload;
