@@ -6,7 +6,7 @@ export const MAX_JOULES = 500;
 
 // UI Texts
 export const PLACEHOLDERS = {
-    dashboardDescription: "This plugin visualizes sustainability metrics such as energy use, estimated carbon emissions, and CPU utilizsation for your current sprint — sourced from your GitHub Actions data.",
+    dashboardDescription: "This Plugin visualizes sustainability metrics such as energy use, estimated carbon emissions, and CPU utilizsation for your current sprint — sourced from your GitHub Actions data.",
     energyCaption: "Tracks energy consumed by recent builds",
     carbonCaption: "Estimates CO₂ generated per commit pipeline",
     treesCaption: "Calculates equivalent offsets using tree-planting data",
