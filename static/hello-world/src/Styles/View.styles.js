@@ -1,7 +1,7 @@
 const styles = {
   container: {
     padding: 20,
-    fontFamily: 'Arial, sans-serif',
+    // fontFamily: 'Arial, sans-serif',
   },
   title: {
     textAlign: 'center',
@@ -23,7 +23,8 @@ const styles = {
     padding: 15,
     borderRadius: 12,
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FAF9F6',
+    color: "#FAF9F6",
     textAlign: 'center',
   },
   caption: {

@@ -12,6 +12,7 @@
     "@forge/kvs": "^0.1.3",
     "@forge/resolver": "^1.6.9",
     "@forge/ui": "^1.11.3",
+    "@tgwf/co2": "^0.16.8",
     "lottie-react": "^2.4.1"
   }
 }
