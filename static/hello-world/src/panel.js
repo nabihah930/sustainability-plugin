@@ -106,6 +106,13 @@ export default function Panel() {
 
         setIssueKey(key);
 
+        // Get current sprint id
+        const sprint = await invoke('getCurrentSprint', {});
+        if (!sprint || !sprint.sprintId) {
+          throw new Error('Could not determine current sprint');
+        }
+        const sprintId = sprint.sprintId;
+
         // Get status, checks, and submitted state in parallel
         const [statusResult, checksResult, submittedResult] = await Promise.all([
           invoke('getIssueStatus', { issueKey: key }),
@@ -131,24 +138,24 @@ export default function Panel() {
   }, []);
 
   // Prevent any further changes if submitted
-  const handleCheckChange = (itemId, checked) => {
-    if (submitted) return; // Prevent changes if already submitted
+  const handleCheckChange = async (itemId, checked) => {
+    if (submitted) return;
     const next = { ...checks, [itemId]: checked };
     setChecks(next);
-    invoke("saveChecks", {
+    await invoke("saveChecks", {
       issueKey,
       checklist: next,
     });
   };
 
-  const handleReadAll = () => {
-    if (submitted) return; // Prevent changes if already submitted
+  const handleReadAll = async () => {
+    if (submitted) return;
     const allChecked = CHECKLIST_ITEMS.reduce((acc, item) => {
       acc[item.id] = true;
       return acc;
     }, {});
     setChecks(allChecked);
-    invoke("saveChecks", {
+    await invoke("saveChecks", {
       issueKey,
       checklist: allChecked,
     });
@@ -156,7 +163,7 @@ export default function Panel() {
 
   const handleSubmitChecklist = async (e) => {
     e.preventDefault();
-    if (submitted) return; // Prevent double submission
+    if (submitted) return;
     try {
       await invoke("submitChecklist", {
         issueKey,

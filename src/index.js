@@ -169,6 +169,79 @@ resolver.define("onSprintClosed", async ({ payload }) => {
   }
 });
 
+// Get current active sprint for a Project
+resolver.define('getCurrentSprint', async () => {
+  try {
+    // TO-DO: Move hard-coded values to a constants file
+    const res = await api.asApp().requestJira(
+      route`/rest/agile/1.0/board/34/sprint?state=active`
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Failed to fetch active sprint for project:', text);
+      return { error: 'Failed to fetch active sprint for project' };
+    }
+
+    const data = await res.json();
+
+    if (data.total === 0) {
+      return { message: 'No active sprints found for the board' };
+    }
+
+    const sprintInfo = {
+      sprintId: data.values[0].id,
+      state: data.values[0].state,
+      name: data.values[0].name,
+      startDate: data.values[0].startDate,
+      endDate: data.values[0].endDate,
+      goal: data.values[0].goal,
+      createdAt: data.values[0].createdDate,
+      boardId: data.values[0].originBoardId
+    };
+
+    // Automatically update storage with the current active sprint
+    await storage.set("sprint-active", sprintInfo);
+
+    return sprintInfo;
+  } catch (err) {
+    console.error('Error fetching current sprint:', err);
+    return { error: 'Exception occurred while fetching current sprint' };
+  }
+});
+
+// Store sprint details
+resolver.define('storeSprintDetails', async ({ payload }) => {
+  try {
+    // Constructing unique key following key naming strategy
+    const key = `sprint-${payload.sprintId}-details`;
+    await storage.set(key, payload);
+  
+    return { status: 'OK', message: `Sprint details stored! [${key}]` };
+  } catch (err) {
+    console.error(`Error saving sprint details: `, err);
+    return {
+      message: 'Exception occurred while saving sprint details',
+      err
+    };
+  }
+});
+
+resolver.define("getSprintDetails", async () => {
+  try {
+    const activeSprint = await storage.get("sprint-active");
+    
+    if (!activeSprint || !activeSprint?.sprintId) {
+      throw new Error("No active sprint saved.");
+    }
+    const sprintDetails = await storage.get(`sprint-${activeSprint.sprintId}-details`);
+    return sprintDetails;
+  } catch (err) {
+    console.error("Error gettign sprint details: ", err.message);
+    return {};
+  }
+});
+
 // onIssueDone function to handle issue updates
 resolver.define("onIssueDone", async ({ payload }) => {
   const { issue, changelog } = payload;
@@ -254,11 +327,21 @@ resolver.define("getIssueStatus", async ({ payload }) => {
   }
 });
 
+// Helper to get current sprint id (reuse logic from getSprintMetrics)
+async function getCurrentSprintId() {
+  const activeSprint = await storage.get("sprint-active");
+  if (!activeSprint || !activeSprint.sprintId) {
+    throw new Error("No active sprint saved");
+  }
+  return activeSprint.sprintId;
+}
+
 // Load any saved checklist state from Forge storage (instead of Jira issue properties)
 resolver.define("getSavedChecks", async ({ payload }) => {
   const { issueKey } = payload;
   try {
-    const checks = await storage.get(`checklist-${issueKey}`);
+    const sprintId = await getCurrentSprintId();
+    const checks = await storage.get(`sprint-${sprintId}-${issueKey}-checklist`);
     return checks || {};
   } catch (error) {
     console.error('Error getting saved checks:', error);
@@ -269,16 +352,23 @@ resolver.define("getSavedChecks", async ({ payload }) => {
 // Persist checklist state into Forge storage 
 resolver.define("saveChecks", async ({ payload }) => {
   const { issueKey, checklist } = payload;
-  await storage.set(`checklist-${issueKey}`, checklist);
-  console.log(`Saved checklist for ${issueKey}:`, checklist);
-  return { success: true };
+  try {
+    const sprintId = await getCurrentSprintId();
+    await storage.set(`sprint-${sprintId}-${issueKey}-checklist`, checklist);
+    console.log(`Saved checklist for ${issueKey} (sprint ${sprintId}):`, checklist);
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving checks:', error);
+    throw error;
+  }
 });
 
 // Load checklist submitted state from Forge storage
 resolver.define("getChecklistSubmitted", async ({ payload }) => {
   const { issueKey } = payload;
   try {
-    const submitted = await storage.get(`accessibilityChecklistSubmitted-${issueKey}`);
+    const sprintId = await getCurrentSprintId();
+    const submitted = await storage.get(`sprint-${sprintId}-${issueKey}-submittedChecklist`);
     return { submitted: Boolean(submitted) };
   } catch (error) {
     console.error('Error getting checklist submitted state:', error);
@@ -290,11 +380,10 @@ resolver.define("getChecklistSubmitted", async ({ payload }) => {
 resolver.define("submitChecklist", async ({ payload }) => {
   const { issueKey, checklist } = payload;
   try {
-    // Save the checklist in Forge storage
-    await storage.set(`checklist-${issueKey}`, checklist);
-    // Mark as submitted in Forge storage
-    await storage.set(`accessibilityChecklistSubmitted-${issueKey}`, true);
-    console.log(`Checklist submitted for ${issueKey}`);
+    const sprintId = await getCurrentSprintId();
+    await storage.set(`sprint-${sprintId}-${issueKey}-checklist`, checklist);
+    await storage.set(`sprint-${sprintId}-${issueKey}-submittedChecklist`, true);
+    console.log(`Checklist submitted for ${issueKey} (sprint ${sprintId})`);
     return { success: true };
   } catch (error) {
     console.error('Error submitting checklist:', error);
