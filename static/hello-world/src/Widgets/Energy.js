@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import animationData from "../lottie/AnimationBattery.json";
 import { MAX_JOULES } from "../util/constants";
+import styles from "../Styles/View.styles.js";
 
 function EnergyWidget({ totalEnergyJoules }) {
     const lottieRef = useRef();
@@ -16,12 +17,12 @@ function EnergyWidget({ totalEnergyJoules }) {
     }, [totalEnergyJoules]);
 
     return (
-        <div style={{ width: 200, height: 200 }}>
+        <div style={{width: 200, height: 200}}>
             <Lottie
                 lottieRef={lottieRef}
                 animationData={animationData}
                 loop={false}
-                autoplay={false}
+                autoplay={false}  
             />
         </div>
     );

@@ -11,6 +11,7 @@ import CarWidget from './Widgets/Car.js';
 import styles from "./Styles/View.styles.js";
 import { calculateTreesNeeded, getEnergyEquivalentMessages } from './util/helper.js';
 import { PLACEHOLDERS } from './util/constants.js';
+import SprintSummary from './SprintSummary';
 
 function View() {
   const [context, setContext] = useState();
@@ -37,7 +38,7 @@ function View() {
 
   return (
     <div>
-      <div style={styles.container}>
+      <div style={styles.insightsWrapperCard}>
         <h2 style={styles.title}>Sustainable Sprint Insights</h2>
         <p style={styles.description}>
           {PLACEHOLDERS.dashboardDescription}
@@ -97,65 +98,8 @@ function View() {
         </div>
       </div>
       <div style={styles.container}>
-        <h2 style={{ ...styles.title, marginTop: '40px',  marginBottom: '40px' }}>Sprint Summary</h2>
-        {/* Sprint Summary Table */}
-        <table style={styles.table}>
-          <tbody>
-            <tr style={styles.tableRow}>
-              <td style={styles.tableCell}><strong>Sprint Name</strong></td>
-              <td style={styles.tableCell}>{sprint?.name ?? "N/A"}</td>
-            </tr>
-            <tr style={styles.tableRow}>
-              <td style={styles.tableCell}><strong>Start Date</strong></td>
-              <td style={styles.tableCell}>{new Date(sprint?.startDate).toLocaleString() ?? "N/A"}</td>
-            </tr>
-            <tr style={styles.tableRow}>
-              <td style={styles.tableCell}><strong>End Date</strong></td>
-              <td style={styles.tableCell}>{new Date(sprint?.endDate).toLocaleString() ?? "N/A"}</td>
-            </tr>
-            <tr style={styles.tableRow}>
-              <td style={styles.tableCell}><strong>State</strong></td>
-              <td style={styles.tableCell}>{sprint?.state ?? "N/A"}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div style={{...styles.cardContainer, gap: 15}}>
-          {/* Home Card */}
-          <div style={{...styles.card, width: 190}}>
-            <HomeWidget />
-            <p style={styles.caption}>
-              { energyEquivalencies[0] }
-            </p>
-          </div>
-          {/* Smartphones Card */}
-          <div style={{...styles.card, width: 190}}>
-            <SmartphonesWidget />
-            <p style={styles.caption}>
-              { energyEquivalencies[1] }
-            </p>
-          </div>
-          {/* Toast Card */}
-          <div style={{...styles.card, width: 190}}>
-            <ToastWidget />
-            <p style={styles.caption}>
-              { energyEquivalencies[2] }
-            </p>
-          </div>
-          {/* Car Card */}
-          <div style={{...styles.card, width: 190}}>
-            <CarWidget />
-            <p style={styles.caption}>
-              { energyEquivalencies[3] }
-            </p>
-          </div>
-          {/* Bulb Card */}
-          <div style={{...styles.card, width: 190}}>
-            <BulbWidget />
-            <p style={styles.caption}>
-              { energyEquivalencies[4] }
-            </p>
-          </div>
-        </div>
+        {/* impoarted SprintSummary component */}
+        <SprintSummary sprint={sprint} energyEquivalencies={energyEquivalencies} />
       </div>
     </div>
   );
