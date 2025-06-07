@@ -361,11 +361,21 @@ resolver.define("getIssueStatus", async ({ payload }) => {
   }
 });
 
+// Helper to get current sprint id (reuse logic from getSprintMetrics)
+async function getCurrentSprintId() {
+  const activeSprint = await storage.get("sprint-active");
+  if (!activeSprint || !activeSprint.sprintId) {
+    throw new Error("No active sprint saved");
+  }
+  return activeSprint.sprintId;
+}
+
 // Load any saved checklist state from Forge storage (instead of Jira issue properties)
 resolver.define("getSavedChecks", async ({ payload }) => {
   const { issueKey } = payload;
   try {
-    const checks = await storage.get(`checklist-${issueKey}`);
+    const sprintId = await getCurrentSprintId();
+    const checks = await storage.get(`sprint-${sprintId}-${issueKey}-checklist`);
     return checks || {};
   } catch (error) {
     console.error('Error getting saved checks:', error);
@@ -376,16 +386,23 @@ resolver.define("getSavedChecks", async ({ payload }) => {
 // Persist checklist state into Forge storage 
 resolver.define("saveChecks", async ({ payload }) => {
   const { issueKey, checklist } = payload;
-  await storage.set(`checklist-${issueKey}`, checklist);
-  console.log(`Saved checklist for ${issueKey}:`, checklist);
-  return { success: true };
+  try {
+    const sprintId = await getCurrentSprintId();
+    await storage.set(`sprint-${sprintId}-${issueKey}-checklist`, checklist);
+    console.log(`Saved checklist for ${issueKey} (sprint ${sprintId}):`, checklist);
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving checks:', error);
+    throw error;
+  }
 });
 
 // Load checklist submitted state from Forge storage
 resolver.define("getChecklistSubmitted", async ({ payload }) => {
   const { issueKey } = payload;
   try {
-    const submitted = await storage.get(`accessibilityChecklistSubmitted-${issueKey}`);
+    const sprintId = await getCurrentSprintId();
+    const submitted = await storage.get(`sprint-${sprintId}-${issueKey}-submittedChecklist`);
     return { submitted: Boolean(submitted) };
   } catch (error) {
     console.error('Error getting checklist submitted state:', error);
@@ -397,11 +414,10 @@ resolver.define("getChecklistSubmitted", async ({ payload }) => {
 resolver.define("submitChecklist", async ({ payload }) => {
   const { issueKey, checklist } = payload;
   try {
-    // Save the checklist in Forge storage
-    await storage.set(`checklist-${issueKey}`, checklist);
-    // Mark as submitted in Forge storage
-    await storage.set(`accessibilityChecklistSubmitted-${issueKey}`, true);
-    console.log(`Checklist submitted for ${issueKey}`);
+    const sprintId = await getCurrentSprintId();
+    await storage.set(`sprint-${sprintId}-${issueKey}-checklist`, checklist);
+    await storage.set(`sprint-${sprintId}-${issueKey}-submittedChecklist`, true);
+    console.log(`Checklist submitted for ${issueKey} (sprint ${sprintId})`);
     return { success: true };
   } catch (error) {
     console.error('Error submitting checklist:', error);
