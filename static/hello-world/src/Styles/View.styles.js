@@ -46,13 +46,23 @@ const styles = {
     marginBottom: '24px',
   },
   tableRow: {
-    // borderBottom: '1px solid #ccc',
+    borderBottom: '1px solid #e0e0e0', // add row separator
   },
   tableCell: {
     padding: '8px 12px',
     textAlign: 'center',
     justifyContent: 'center',
-    fontSize: 18,
+    fontSize: 16, 
+    verticalAlign: 'middle',
+    borderBottom: '1px solid #e0e0e0', 
+  },
+  checkedItemsList: {
+    margin: 0,
+    paddingLeft: 4, 
+    textAlign: 'center', 
+    listStylePosition: 'inside',
+    fontSize: 15,
+    display: 'inline-block', 
   },
   // Sprint Summary styles
   sprintSummaryTitle: {

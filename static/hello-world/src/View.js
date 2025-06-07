@@ -17,6 +17,7 @@ function View() {
   const [context, setContext] = useState();
   const [data, setData] = useState(null);
   const [sprint, setSprint] = useState(null);
+  const [compliance, setCompliance] = useState([]);
   
   useEffect(() => {
     invoke('getSprintMetrics').then(setData);
@@ -28,6 +29,10 @@ function View() {
 
   useEffect(() => {
     invoke('getSprintDetails').then(setSprint);
+  }, []);
+
+  useEffect(() => {
+    invoke('getSprintAccessibilityCompliance').then(setCompliance);
   }, []);
 
   if (!context || !data) {
@@ -100,6 +105,55 @@ function View() {
       <div style={styles.container}>
         {/* impoarted SprintSummary component */}
         <SprintSummary sprint={sprint} energyEquivalencies={energyEquivalencies} />
+      </div>
+      {/* Accessibility Compliance Table */}
+      <div style={styles.insightsWrapperCard}>
+        <h2 style={styles.title}>Accessibility Compliance</h2>
+        <p style={styles.description}>
+          Issues in this sprint with submitted accessibility checklists and their compliance status.
+        </p>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.tableCell}>Issue Key</th>
+              <th style={styles.tableCell}>Checked Items</th>
+              <th style={styles.tableCell}>Total Checked Items</th>
+            </tr>
+          </thead>
+          <tbody>
+            {compliance.length === 0 ? (
+              <tr style={styles.tableRow}>
+                <td style={styles.tableCell} colSpan={3}>No submitted checklists for this sprint.</td>
+              </tr>
+            ) : (
+              compliance.map(({ issueKey, checklist }) => {
+                const TOTAL_ITEMS = 12;
+                const checkedItems = Object.entries(checklist)
+                  .filter(([_, v]) => v)
+                  .map(([k, _]) => k);
+                const checked = checkedItems.length;
+                return (
+                  <tr key={issueKey} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{issueKey}</td>
+                    <td style={styles.tableCell}>
+                      {checked > 0
+                        ? (
+                          <ul style={styles.checkedItemsList}>
+                            {checkedItems.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        )
+                        : "—"
+                      }
+                    </td>
+                    <td style={styles.tableCell}>{checked}/{TOTAL_ITEMS}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

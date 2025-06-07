@@ -213,7 +213,7 @@ resolver.define('getCurrentSprint', async () => {
   try {
     // TO-DO: Move hard-coded values to a constants file
     const res = await api.asApp().requestJira(
-      route`/rest/agile/1.0/board/34/sprint?state=active`
+      route`/rest/agile/1.0/board/1/sprint?state=active`
     );
 
     if (!res.ok) {
@@ -422,6 +422,46 @@ resolver.define("submitChecklist", async ({ payload }) => {
   } catch (error) {
     console.error('Error submitting checklist:', error);
     throw error;
+  }
+});
+
+resolver.define('getSprintAccessibilityCompliance', async () => {
+  try {
+    const activeSprint = await storage.get("sprint-active");
+    if (!activeSprint || !activeSprint.sprintId) {
+      throw new Error("No active sprint saved");
+    }
+    const sprintId = activeSprint.sprintId;
+
+    // Get all checklist keys for this sprint
+    const checklistKeys = await kvs.query()
+      .where('key', WhereConditions.beginsWith(`sprint-${sprintId}-`))
+      .getMany();
+
+    // Only include keys that match the checklist pattern
+    const checklistPattern = new RegExp(`^sprint-${sprintId}-(.+)-checklist$`);
+    const complianceData = [];
+
+    for (const entry of checklistKeys.results) {
+      const match = entry.key.match(checklistPattern);
+      if (match) {
+        const issueKey = match[1];
+        const checklist = entry.value || {};
+        // Only include if at least one item is checked
+        const hasChecked = Object.values(checklist).some(Boolean);
+        if (hasChecked) {
+          complianceData.push({
+            issueKey,
+            checklist
+          });
+        }
+      }
+    }
+
+    return complianceData;
+  } catch (err) {
+    console.error("Error fetching accessibility compliance:", err);
+    return [];
   }
 });
 
