@@ -31,6 +31,10 @@ const styles = {
     fontSize: 13,
     marginTop: 4,
   },
+  widget: { 
+    width: 200, 
+    height: 200 
+  },
 };
 
 export default styles;

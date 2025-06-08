@@ -36,6 +36,29 @@ app.post('/metrics', async (req, res) => {
   }
 });
 
+app.post('/report', async (req, res) => {
+  const sprint = req.body;
+  console.log(sprint);
+  const data = JSON.stringify(sprint);
+  const config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: process.env.FROGE_REPORT_WEB_TRIGGER_URL,
+    headers: { 
+      'Content-Type': 'application/json'
+    },
+    data
+  };
+
+  try {
+    const response = await axios.request(config);
+    res.status(200).json({ status: response.status, message: 'Forwarded Report Details to Forge Web Trigger' });
+  } catch (error) {
+    console.error('❗ Error forwarding to Forge:', error?.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to forward to Forge', details: error?.response?.data || error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`\nProxy server running on port ${PORT}...\n`);
 });
