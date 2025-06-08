@@ -19,10 +19,18 @@ modules:
       function: resolver
       events:
         - avi:jira:updated:issue
-    - key: sprint-closed-trigger
-      function: resolver
+    - key: sprint-started-trigger
+      function: sprint-started
       events:
-        - avi:jira:sprint:closed
+        - avi:jira-software:started:sprint
+    - key: sprint-updated-trigger
+      function: sprint-updated
+      events:
+        - avi:jira-software:updated:sprint
+    - key: sprint-closed-trigger
+      function: sprint-closed
+      events:
+        - avi:jira-software:closed:sprint
   jira:issuePanel:
     - key: accessibility-checklist-panel
       resource: main
@@ -50,6 +58,14 @@ modules:
       handler: index.handler
     - key: web-trigger
       handler: web-trigger.storeMetrics
+    - key: on-sprint-closed
+      handler: web-trigger.onSprintClosed
+    - key: sprint-started
+      handler: trigger.sprintStart
+    - key: sprint-updated
+      handler: trigger.sprintUpdate
+    - key: sprint-closed
+      handler: trigger.sprintClose
 
 resources:
   - key: main
