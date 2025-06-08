@@ -2,7 +2,7 @@ import Lottie from "lottie-react";
 import { useEffect, useRef } from "react";
 import animationData from "../lottie/AnimationMeter.json";
 
-function MeterWidget({ totalCPUpercent }) {
+function MeterWidget({ totalCPUpercent, styles }) {
     const lottieRef = useRef();
     const maxFrame = 136;
 
@@ -16,7 +16,7 @@ function MeterWidget({ totalCPUpercent }) {
     }, [totalCPUpercent]);
     
     return (
-        <div style={{ width: 200, height: 200 }}>
+        <div style={styles.widget}>
             <Lottie
                 lottieRef={lottieRef}
                 animationData={animationData}

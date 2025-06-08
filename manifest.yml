@@ -4,6 +4,10 @@ modules:
       function: web-trigger
       response: # Dynamic web triggers do not need to define a response field and are dynamic by default.
         type: dynamic
+    - key: sprint-closed-web-trigger
+      function: on-sprint-closed
+      response: # Dynamic web triggers do not need to define a response field and are dynamic by default.
+        type: dynamic
   jira:dashboardGadget:
     - key: sustainability-plugin-gadget
       title: Green Track 🌳
@@ -52,6 +56,13 @@ modules:
       title: Sustainability Metrics
       icon: https://www.svgrepo.com/show/530113/tree.svg
       context: ["issue"]
+  jira:sprintAction:
+  - key: open-sprint-preview
+    resource: modal
+    resolver:
+      function: resolver
+    title: Sprint Sustainability View
+    icon: https://www.svgrepo.com/show/530113/tree.svg
 
   function:
     - key: resolver
@@ -71,6 +82,8 @@ resources:
   - key: main
     path: static/hello-world/build
   - key: sidebar
+    path: static/hello-world/build
+  - key: modal
     path: static/hello-world/build
 
 permissions:

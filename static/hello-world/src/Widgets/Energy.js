@@ -3,7 +3,7 @@ import Lottie from "lottie-react";
 import animationData from "../lottie/AnimationBattery.json";
 import { MAX_JOULES } from "../util/constants";
 
-function EnergyWidget({ totalEnergyJoules }) {
+function EnergyWidget({ totalEnergyJoules, styles }) {
     const lottieRef = useRef();
     const maxFrame = 420;
 
@@ -16,7 +16,7 @@ function EnergyWidget({ totalEnergyJoules }) {
     }, [totalEnergyJoules]);
 
     return (
-        <div style={{ width: 200, height: 200 }}>
+        <div style={styles.widget}>
             <Lottie
                 lottieRef={lottieRef}
                 animationData={animationData}

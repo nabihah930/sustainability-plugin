@@ -3,6 +3,7 @@ import { view } from '@forge/bridge';
 import View from './View';
 import Edit from './Edit';
 import Panel from './panel';
+import SprintPreview from './SprintPreview';
 
 function App() {
   const [context, setContext] = useState();
@@ -37,7 +38,7 @@ function App() {
   }
 
   if (!context) {
-    return <div style={{padding: '10px'}}>Loading...</div>;
+    return <div style={{padding: '10px', margin: '10px'}}>Loading...</div>;
   }
 
   // Show appropriate component based on module type
@@ -47,13 +48,21 @@ function App() {
   if (window.location.href.includes('accessibilityChecklist')) {
     return <Panel />;
   }
+  if (window.location.href.includes('open-sprint-preview')) {
+    return <SprintPreview />
+  }
 
   // routing
-  switch (context.extension.entryPoint) {
+  const key = context?.moduleKey || context?.extension?.entryPoint;
+  switch (key) {
     case 'edit':
       return <Edit />;
     case 'accessibility-checklist-panel':
       return <Panel />;
+    case 'open-sprint-preview':
+      return <SprintPreview />
+    case 'sustainability-sidebar-icon':
+      return <View />
     default:
       return <View />;
   }
