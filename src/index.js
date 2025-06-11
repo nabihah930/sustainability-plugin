@@ -293,18 +293,18 @@ resolver.define('storeSprintDetails', async ({ payload }) => {
     };
   }
 });
-
+//get sprint details for summary
 resolver.define("getSprintDetails", async () => {
   try {
-    const activeSprint = await storage.get("sprint-active");
-    
-    if (!activeSprint || !activeSprint?.sprintId) {
-      throw new Error("No active sprint saved.");
+    // Get the most recently viewed sprint from kvs
+    const recentSprint = await kvs.get("sprint-recent");
+    if (!recentSprint || !recentSprint.sprintId) {
+      throw new Error("No recent sprint saved.");
     }
-    const sprintDetails = await storage.get(`sprint-${activeSprint.sprintId}-details`);
+    const sprintDetails = await storage.get(`sprint-${recentSprint.sprintId}-details`);
     return sprintDetails;
   } catch (err) {
-    console.error("Error gettign sprint details: ", err.message);
+    console.error("Error getting sprint details: ", err.message);
     return {};
   }
 });

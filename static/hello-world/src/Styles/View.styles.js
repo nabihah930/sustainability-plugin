@@ -111,6 +111,7 @@ const styles = {
     boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
     backgroundColor: '#f9f9f9',
     marginBottom: 32,
+    minHeight: 260,
   },
   widget: { 
     width: 200, 

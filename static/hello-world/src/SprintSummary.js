@@ -7,6 +7,9 @@ import CarWidget from './Widgets/Car.js';
 import BulbWidget from './Widgets/Bulb.js';
 
 function SprintSummary({ sprint, energyEquivalencies }) {
+  
+  const eq = Array.isArray(energyEquivalencies) ? energyEquivalencies : [];
+
   return (
     <div style={styles.sprintSummaryWrapperCard}>
       <h2 style={{ ...styles.title, ...styles.sprintSummaryTitle }}>Sprint Summary</h2>
@@ -36,35 +39,35 @@ function SprintSummary({ sprint, energyEquivalencies }) {
         <div style={styles.sprintSummaryCard}>
           <HomeWidget />
           <p style={styles.caption}>
-            { energyEquivalencies[0] }
+            { eq[0] || "—" }
           </p>
         </div>
         {/* Smartphones Card */}
         <div style={styles.sprintSummaryCard}>
           <SmartphonesWidget />
           <p style={styles.caption}>
-            { energyEquivalencies[1] }
+            { eq[1] || "—" }
           </p>
         </div>
         {/* Toast Card */}
         <div style={styles.sprintSummaryCard}>
           <ToastWidget />
           <p style={styles.caption}>
-            { energyEquivalencies[2] }
+            { eq[2] || "—" }
           </p>
         </div>
         {/* Car Card */}
         <div style={styles.sprintSummaryCard}>
           <CarWidget />
           <p style={styles.caption}>
-            { energyEquivalencies[3] }
+            { eq[3] || "—" }
           </p>
         </div>
         {/* Bulb Card */}
         <div style={styles.sprintSummaryCard}>
           <BulbWidget />
           <p style={styles.caption}>
-            { energyEquivalencies[4] }
+            { eq[4] || "—" }
           </p>
         </div>
       </div>
