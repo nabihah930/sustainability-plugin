@@ -1,9 +1,9 @@
 import Lottie from "lottie-react";
 import animationData from "../lottie/AnimationBigTree.json"
 
-function BigTreeWidget() {
+function BigTreeWidget({ styles }) {
     return (
-        <div style={{ width: 200, height: 200 }}>
+        <div style={styles.widget}>
             <Lottie animationData={animationData} loop={false} />
         </div>
     );

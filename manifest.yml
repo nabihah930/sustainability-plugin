@@ -4,6 +4,10 @@ modules:
       function: web-trigger
       response: # Dynamic web triggers do not need to define a response field and are dynamic by default.
         type: dynamic
+    - key: sprint-closed-web-trigger
+      function: on-sprint-closed
+      response: # Dynamic web triggers do not need to define a response field and are dynamic by default.
+        type: dynamic
   jira:dashboardGadget:
     - key: sustainability-plugin-gadget
       title: Green Track 🌳
@@ -19,10 +23,18 @@ modules:
       function: resolver
       events:
         - avi:jira:updated:issue
-    - key: sprint-closed-trigger
-      function: resolver
+    - key: sprint-started-trigger
+      function: sprint-started
       events:
-        - avi:jira:sprint:closed
+        - avi:jira-software:started:sprint
+    - key: sprint-updated-trigger
+      function: sprint-updated
+      events:
+        - avi:jira-software:updated:sprint
+    - key: sprint-closed-trigger
+      function: sprint-closed
+      events:
+        - avi:jira-software:closed:sprint
   jira:issuePanel:
     - key: accessibility-checklist-panel
       resource: main
@@ -44,17 +56,34 @@ modules:
       title: Sustainability Metrics
       icon: https://www.svgrepo.com/show/530113/tree.svg
       context: ["issue"]
+  jira:sprintAction:
+  - key: open-sprint-preview
+    resource: modal
+    resolver:
+      function: resolver
+    title: Sprint Sustainability View
+    icon: https://www.svgrepo.com/show/530113/tree.svg
 
   function:
     - key: resolver
       handler: index.handler
     - key: web-trigger
       handler: web-trigger.storeMetrics
+    - key: on-sprint-closed
+      handler: web-trigger.onSprintClosed
+    - key: sprint-started
+      handler: trigger.sprintStart
+    - key: sprint-updated
+      handler: trigger.sprintUpdate
+    - key: sprint-closed
+      handler: trigger.sprintClose
 
 resources:
   - key: main
     path: static/hello-world/build
   - key: sidebar
+    path: static/hello-world/build
+  - key: modal
     path: static/hello-world/build
 
 permissions:

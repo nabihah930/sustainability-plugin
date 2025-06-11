@@ -8,15 +8,18 @@ const resolver = new Resolver();
 // In-memory storage simulation (replace with Forge storage API or external DB in prod)
 let metricsData = [];
 
-resolver.define('getSprintMetrics', async () => {
+resolver.define('getSprintMetrics', async ({ payload }) => {
   try {
-    // TO-DO: Move from legacy storage module to forge KVS (potentially breaking change)
-    const activeSprint = await storage.get("sprint-active");
-    if (!activeSprint || !activeSprint.sprintId) {
-      throw new Error("No active sprint saved");
+    // No payload means this request is coming from the global page "dashboard" that does not have sprint ID
+    if (!payload || Object.keys(payload).length === 0) {
+      const recentSprint = await kvs.get('sprint-recent');
+      
+      if (recentSprint.sprintId) {
+        payload.sprintId = recentSprint.sprintId;
+      }
     }
-
-    const sprintId = activeSprint.sprintId;
+    // TO-DO: Move from legacy storage module to forge KVS (potentially breaking change)
+    const sprintId = payload.sprintId;
     const aggregateMetricsKey = `sprint-${sprintId}-metrics`;
     // Do I need a new key to cache metrics for every sprint or can I have one key to store current sprint cache?
     const timestampKey = `${aggregateMetricsKey}-timestamp`;
@@ -241,6 +244,36 @@ resolver.define('getCurrentSprint', async () => {
   } catch (err) {
     console.error('Error fetching current sprint:', err);
     return { error: 'Exception occurred while fetching current sprint' };
+  }
+});
+
+// Store the most recent sprint (which was viewed via sprint preview)
+resolver.define('storeRecentSprint', async ({ payload }) => {
+  try {
+    if (!payload) {
+      throw new Error("Payload not recieved for recent sprint");
+    }
+    // Should there be a condition here to check if recent sprint is the same (need not be saved)?
+    const key = `sprint-recent`;
+    const sprintDetails = {
+      projectKey: payload.extension.project.key,
+      projectId: payload.extension.project.id,
+      boardId: payload.extension.board.id,
+      boardType: payload.extension.board.type,
+      sprintId: payload.extension.sprint.id,
+      state: payload.extension.sprint.state,
+    };
+
+    console.log(key, sprintDetails);
+    await kvs.set(key, sprintDetails);
+
+    return { status: 'OK', message: `Recent Sprint (${sprintDetails.sprintId}) details stored!` };
+  } catch (err) {
+    console.error(`Error saving recent sprint details: `, err);
+    return {
+      message: 'Exception occurred while saving recent sprint details',
+      err
+    };
   }
 });
 
