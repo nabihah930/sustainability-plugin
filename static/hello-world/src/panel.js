@@ -60,6 +60,7 @@ export default function Panel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [sprintId, setSprintId] = useState(null);
 
   useEffect(() => {
     const initializePanel = async () => {
@@ -106,11 +107,19 @@ export default function Panel() {
 
         setIssueKey(key);
 
-        // Get status, checks, and submitted state in parallel
+        // Fetch sprintId for this issue
+        let sprintId = null;
+        try {
+          sprintId = await invoke('getSprintIdForIssue', { issueKey: key });
+        } catch (e) {
+          console.warn('Could not fetch sprintId for issue:', e);
+        }
+
+        // Get status, checks, and submitted state in parallel, passing only issueKey
         const [statusResult, checksResult, submittedResult] = await Promise.all([
           invoke('getIssueStatus', { issueKey: key }),
-          invoke('getSavedChecks', { issueKey: key }),
-          invoke('getChecklistSubmitted', { issueKey: key })
+          invoke('getSavedChecks', { issueKey: key, sprintId }), // pass sprintId
+          invoke('getChecklistSubmitted', { issueKey: key, sprintId }) // pass sprintId
         ]);
 
         console.log('Status result:', statusResult);
@@ -119,6 +128,8 @@ export default function Panel() {
         setStatus(statusResult);
         setChecks(checksResult || {});
         setSubmitted(Boolean(submittedResult && submittedResult.submitted));
+        // Save sprintId in state for later use
+        setSprintId(sprintId);
       } catch (err) {
         console.error('Panel initialization failed:', err);
         setError(err.message);
@@ -138,6 +149,7 @@ export default function Panel() {
     invoke("saveChecks", {
       issueKey,
       checklist: next,
+      sprintId // pass sprintId
     });
   };
 
@@ -151,6 +163,7 @@ export default function Panel() {
     invoke("saveChecks", {
       issueKey,
       checklist: allChecked,
+      sprintId // pass sprintId
     });
   };
 
@@ -161,6 +174,7 @@ export default function Panel() {
       await invoke("submitChecklist", {
         issueKey,
         checklist: checks,
+        sprintId // pass sprintId
       });
       setSubmitted(true);
     } catch (err) {
