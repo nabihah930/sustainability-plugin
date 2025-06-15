@@ -1,7 +1,7 @@
 import Resolver from '@forge/resolver';
 import api, { route, storage } from "@forge/api";
 import { kvs, WhereConditions } from '@forge/kvs';
-import { aggregateSprintMetrics } from "./util/helper";
+import { aggregateSprintMetrics, getSprintIdForIssue } from "./util/helper";
 
 const resolver = new Resolver();
 
@@ -381,50 +381,63 @@ resolver.define("getIssueStatus", async ({ payload }) => {
 
 // Load any saved checklist state from Forge storage (instead of Jira issue properties)
 resolver.define("getSavedChecks", async ({ payload }) => {
-  const { issueKey } = payload;
-  try {
-    const checks = await storage.get(`checklist-${issueKey}`);
-    return checks || {};
-  } catch (error) {
-    console.error('Error getting saved checks:', error);
-    throw error;
+  let { issueKey, sprintId } = payload;
+  if (!sprintId && issueKey) {
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
   }
+  if (!sprintId) {
+    const recentSprint = await kvs.get('sprint-recent');
+    sprintId = recentSprint?.sprintId;
+  }
+  const checks = await storage.get(`sprint-${sprintId}-checklist-${issueKey}`);
+  return checks || {};
 });
 
 // Persist checklist state into Forge storage 
 resolver.define("saveChecks", async ({ payload }) => {
-  const { issueKey, checklist } = payload;
-  await storage.set(`checklist-${issueKey}`, checklist);
-  console.log(`Saved checklist for ${issueKey}:`, checklist);
+  let { issueKey, checklist, sprintId } = payload;
+  if (!sprintId && issueKey) {
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
+  }
+  if (!sprintId) {
+    const recentSprint = await kvs.get('sprint-recent');
+    sprintId = recentSprint?.sprintId;
+  }
+  await storage.set(`sprint-${sprintId}-checklist-${issueKey}`, checklist);
+  console.log(`Saved checklist for ${issueKey} (sprint ${sprintId}):`, checklist);
   return { success: true };
 });
 
 // Load checklist submitted state from Forge storage
 resolver.define("getChecklistSubmitted", async ({ payload }) => {
-  const { issueKey } = payload;
-  try {
-    const submitted = await storage.get(`accessibilityChecklistSubmitted-${issueKey}`);
-    return { submitted: Boolean(submitted) };
-  } catch (error) {
-    console.error('Error getting checklist submitted state:', error);
-    return { submitted: false };
+  let { issueKey, sprintId } = payload;
+  if (!sprintId && issueKey) {
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
   }
+  if (!sprintId) {
+    const recentSprint = await kvs.get('sprint-recent');
+    sprintId = recentSprint?.sprintId;
+  }
+  const submitted = await storage.get(`sprint-${sprintId}-accessibilityChecklistSubmitted-${issueKey}`);
+  return { submitted: Boolean(submitted) };
 });
 
 // Mark checklist as submitted and save checks in Forge storage
 resolver.define("submitChecklist", async ({ payload }) => {
-  const { issueKey, checklist } = payload;
-  try {
-    // Save the checklist in Forge storage
-    await storage.set(`checklist-${issueKey}`, checklist);
-    // Mark as submitted in Forge storage
-    await storage.set(`accessibilityChecklistSubmitted-${issueKey}`, true);
-    console.log(`Checklist submitted for ${issueKey}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error submitting checklist:', error);
-    throw error;
+  let { issueKey, checklist, sprintId } = payload;
+  if (!sprintId && issueKey) {
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
   }
+  if (!sprintId) {
+    const recentSprint = await kvs.get('sprint-recent');
+    sprintId = recentSprint?.sprintId;
+  }
+  // Save the checklist in Forge storage
+  await storage.set(`sprint-${sprintId}-checklist-${issueKey}`, checklist);
+  // Mark as submitted in Forge storage
+  await storage.set(`sprint-${sprintId}-accessibilityChecklistSubmitted-${issueKey}`, true);
+  console.log(`Checklist submitted for ${issueKey} (sprint ${sprintId})`);
+  return { success: true };
 });
 
 export const handler = resolver.getDefinitions();

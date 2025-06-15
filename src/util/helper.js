@@ -81,3 +81,19 @@ export function calculateCarbonImpact(energyJoules, carbonIntensity = 40) {
     treesRequired: treesRequired.toFixed(4),
   };
 }
+
+// Get sprintId for an issueKey using Jira API
+export async function getSprintIdForIssue(issueKey, api, route) {
+  try {
+    const response = await api.asApp().requestJira(route`/rest/api/3/issue/${issueKey}`);
+    if (!response.ok) return undefined;
+    const data = await response.json();
+    const sprintField = data.fields.customfield_10020;
+    if (Array.isArray(sprintField) && sprintField.length > 0) {
+      return sprintField[0].id;
+    }
+  } catch (err) {
+    console.error("Error getting sprint for issue", err);
+  }
+  return undefined;
+}
