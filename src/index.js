@@ -1,7 +1,7 @@
 import Resolver from '@forge/resolver';
 import api, { route, storage } from "@forge/api";
 import { kvs, WhereConditions } from '@forge/kvs';
-import { aggregateSprintMetrics } from "./util/helper";
+import { aggregateSprintMetrics, getSprintIdForIssue } from "./util/helper";
 
 const resolver = new Resolver();
 
@@ -359,23 +359,6 @@ resolver.define("onIssueDone", async ({ payload }) => {
   }
 });
 
-// Get sprintId for an issueKey using Jira API
-async function getSprintIdForIssue(issueKey) {
-  try {
-    const response = await api.asApp().requestJira(route`/rest/api/3/issue/${issueKey}`);
-    if (!response.ok) return undefined;
-    const data = await response.json();
-    const sprintField = data.fields.customfield_10020;
-    if (Array.isArray(sprintField) && sprintField.length > 0) {
-      return sprintField[0].id;
-    }
-  } catch (err) {
-    console.error("Error getting sprint for issue", err);
-  }
-  return undefined;
-}
-
-
 resolver.define("getIssueStatus", async ({ payload }) => {
   const { issueKey } = payload;
   
@@ -400,7 +383,7 @@ resolver.define("getIssueStatus", async ({ payload }) => {
 resolver.define("getSavedChecks", async ({ payload }) => {
   let { issueKey, sprintId } = payload;
   if (!sprintId && issueKey) {
-    sprintId = await getSprintIdForIssue(issueKey);
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
   }
   if (!sprintId) {
     const recentSprint = await kvs.get('sprint-recent');
@@ -414,7 +397,7 @@ resolver.define("getSavedChecks", async ({ payload }) => {
 resolver.define("saveChecks", async ({ payload }) => {
   let { issueKey, checklist, sprintId } = payload;
   if (!sprintId && issueKey) {
-    sprintId = await getSprintIdForIssue(issueKey);
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
   }
   if (!sprintId) {
     const recentSprint = await kvs.get('sprint-recent');
@@ -429,7 +412,7 @@ resolver.define("saveChecks", async ({ payload }) => {
 resolver.define("getChecklistSubmitted", async ({ payload }) => {
   let { issueKey, sprintId } = payload;
   if (!sprintId && issueKey) {
-    sprintId = await getSprintIdForIssue(issueKey);
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
   }
   if (!sprintId) {
     const recentSprint = await kvs.get('sprint-recent');
@@ -443,7 +426,7 @@ resolver.define("getChecklistSubmitted", async ({ payload }) => {
 resolver.define("submitChecklist", async ({ payload }) => {
   let { issueKey, checklist, sprintId } = payload;
   if (!sprintId && issueKey) {
-    sprintId = await getSprintIdForIssue(issueKey);
+    sprintId = await getSprintIdForIssue(issueKey, api, route);
   }
   if (!sprintId) {
     const recentSprint = await kvs.get('sprint-recent');
