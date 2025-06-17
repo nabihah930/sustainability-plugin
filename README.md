@@ -20,7 +20,6 @@ There could be 2 type of users:
 ```
 forge login
 ```
-- 
 - Install top-level dependencies:
 ```
 npm install
@@ -32,7 +31,7 @@ npm install
 ```
 forge login
 ```
-- 
+
 - Install top-level dependencies:
 ```
 npm install
@@ -43,11 +42,10 @@ npm install
 npm install
 ```
 - If you have a backend and frontend folder:
-  ```
+```
 cd 'backend' && npm install
 cd 'frontend' && npm install
-
-  ```
+```
 - Modify your app by editing the files in `static/hello-world/src/`.
 
 - Build your app (inside of the `static/hello-world` directory):
@@ -71,9 +69,8 @@ forge install
 - You can also upgrade existing installations:
 ```
 forge install --upgrade
-
 ```
-- Web Triggers (Optional)
+## Web Triggers (Optional)
 
 - Trigger via function key from manifest.yml
 ```
