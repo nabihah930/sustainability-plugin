@@ -5,8 +5,6 @@ import { aggregateSprintMetrics, getSprintIdForIssue } from "./util/helper";
 
 const resolver = new Resolver();
 
-// In-memory storage simulation (replace with Forge storage API or external DB in prod)
-let metricsData = [];
 
 resolver.define('getSprintMetrics', async ({ payload }) => {
   try {
@@ -54,198 +52,9 @@ resolver.define('getSprintMetrics', async ({ payload }) => {
   }
 });
 
-// TO-DO: Delete this resolver since submit metrics handled by web trigger 
-// POST /metrics - Accept sustainability metrics
-resolver.define('submitMetrics', async ({ payload }) => {
-  const { sprintId, carbonEmissions, energyUsed, memoryUsed, dataTransferred } = payload;
 
-  metricsData.push({
-    sprintId,
-    carbonEmissions,
-    energyUsed,
-    memoryUsed,
-    dataTransferred,
-    timestamp: new Date().toISOString(),
-  });
 
-  return { status: 'Ok', message: 'Metrics stored' };
-});
 
-// GET /sprint-summnary - Return metrics for the latest sprint
-resolver.define('getSprintSummary', async ({ payload }) => {
-  const { sprintId } = payload;
-  const sprintMetrics = metricsData.filter(m => m.sprintId === sprintId);
-  const summary = {
-    totalCarbon: sprintMetrics.reduce((sum, m) => sum + m.carbonEmissions, 0),
-    totalEnergy: sprintMetrics.reduce((sum, m) => sum + m.energyUsed, 0),
-    memoryUsed: sprintMetrics.reduce((sum, m) => sum + m.memoryUsed, 0),
-    dataTransferred: sprintMetrics.reduce((sum, m) => sum + m.dataTransferred, 0),
-    entries: sprintMetrics.length
-  };
-
-  return summary;
-});
-
-// onSprintClosed function to create sustainability reports on Confluence
-resolver.define("onSprintClosed", async ({ payload }) => {
-  const { sprint } = payload;
-  // Added seed values for testing (Replace when app is deployed)
-  const sprintId = sprint?.id || 12345;
-  const sprintName = sprint?.name || 'Sprint Test';
-  const metrics = await storage.get(`sprint-${sprintId}`);
-
-  console.log(`Sprint closed: ${sprintName} (${sprintId})`);
-
-  if (!metrics || metrics.length === 0) {
-    console.log("No metrics data found for this sprint.");
-    return;
-  }
-
-  // Aggregate total sustainability metrics for the sprint
-  const totalCarbon = metrics.reduce((sum, m) => sum + m.carbonEmissions, 0);
-  const totalEnergy = metrics.reduce((sum, m) => sum + m.energyUsed, 0);
-  const totalMemory = metrics.reduce((sum, m) => sum + m.memoryUsed, 0);
-  const totalData = metrics.reduce((sum, m) => sum + m.dataTransferred, 0);
-
-  // Format individual developer metrics table
-  const devMetrics = Object.groupBy(metrics, m => m.developer);
-  const devTableRows = Object.entries(devMetrics).map(([dev, entries]) => {
-    const sum = entries.reduce((acc, m) => ({
-      carbon: acc.carbon + m.carbonEmissions,
-      energy: acc.energy + m.energyUsed,
-      memory: acc.memory + m.memoryUsed,
-      data: acc.data + m.dataTransferred,
-    }), { carbon: 0, energy: 0, memory: 0, data: 0 });
-
-    return `
-      <tr>
-        <td>${dev}</td>
-        <td>${sum.carbon.toFixed(2)} gCO₂e</td>
-        <td>${sum.energy.toFixed(2)} Wh</td>
-        <td>${sum.memory.toFixed(2)} MB</td>
-        <td>${sum.data.toFixed(2)} MB</td>
-      </tr>
-    `;
-  }).join("");
-
-  // Sprint Details Section (Replace hardcoded values with sprint details from payload)
-  const sprintDetailsSection = `
-    <h3>🗂️ Sprint Details</h3>
-    <table>
-      <tbody>
-        <tr><td>Duration</td><td>DD-MM-YYYY to DD-MM-YYYY</td></tr>
-        <tr><td>State</td><td>Completed</td></tr>
-        <tr><td>Total Story Points</td><td>15</td></tr>
-        <tr><td>Sprint Goal</td><td>To test the confluence report generation</td></tr>
-        <tr><td>Scrum Master</td><td>Scrum Master</td></tr>
-      </tbody>
-    </table>
-  `;
-  
-  // TO-DO: Move constants to a separate file
-  const spaceId = "19693572";
-  const confluenceBody = `
-    <h2>Sustainability Report for Sprint ${sprintName}</h2>
-    <p><strong>Jira Board:</strong> Dummy Board <br/><strong>Project:</strong> Dummy Project</p>
-    ${sprintDetailsSection}
-
-    <h3>🌱 Aggregate Metrics</h3>
-    <table>
-      <tbody>
-        <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Total Carbon Emissions</td><td>${totalCarbon.toFixed(2)} gCO₂e</td></tr>
-        <tr><td>Total Energy Used</td><td>${totalEnergy.toFixed(2)} Wh</td></tr>
-        <tr><td>Total Memory Used</td><td>${totalMemory.toFixed(2)} MB</td></tr>
-        <tr><td>Total Data Transferred</td><td>${totalData.toFixed(2)} MB</td></tr>
-      </tbody>
-    </table>
-
-    <h3>👩‍💻 Individual Developer Metrics</h3>
-    <table>
-      <tbody>
-        <tr>
-          <th>Developer</th>
-          <th>Carbon Emissions</th>
-          <th>Energy Used</th>
-          <th>Memory Used</th>
-          <th>Data Transferred</th>
-        </tr>
-        ${devTableRows}
-      </tbody>
-    </table>
-  `;
-
-  try {
-    const bodyData = {
-      spaceId,
-      status: "current",
-      title: "Test Sprint Sustainability Report 🍀",
-      body: {
-        representation: "storage",
-        value: confluenceBody
-      }
-    };
-
-    const response = await api.asApp().requestConfluence(route`/wiki/api/v2/pages`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(bodyData)
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("\nFailed to create Confluence page: ", error);
-      throw new Error("Confluence page creation failed");
-    }
-  
-    const page = await response.json();
-    console.log("Created Confluence page:", page._links.webui);
-  
-    return { status: "ok", pageUrl: page._links.webui };
-  } catch (err) {
-    console.log(`❌ Error creating page on Confluene: ${err}`);
-    throw err;
-  }
-});
-
-// Get current active sprint for a Project
-resolver.define('getCurrentSprint', async () => {
-  try {
-    // TO-DO: Move hard-coded values to a constants file
-    const res = await api.asApp().requestJira(
-      route`/rest/agile/1.0/board/34/sprint?state=active`
-    );
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('Failed to fetch active sprint for project:', text);
-      return { error: 'Failed to fetch active sprint for project' };
-    }
-
-    const data = await res.json();
-
-    if (data.total === 0) {
-      return { message: 'No active sprints found for the board' };
-    }
-
-    return {
-      sprintId: data.values[0].id,
-      state: data.values[0].state,
-      name: data.values[0].name,
-      startDate: data.values[0].startDate,
-      endDate: data.values[0].endDate,
-      goal: data.values[0].goal,
-      createdAt: data.values[0].createdDate,
-      boardId: data.values[0].originBoardId
-    };
-  } catch (err) {
-    console.error('Error fetching current sprint:', err);
-    return { error: 'Exception occurred while fetching current sprint' };
-  }
-});
 
 // Store the most recent sprint (which was viewed via sprint preview)
 resolver.define('storeRecentSprint', async ({ payload }) => {
@@ -293,6 +102,7 @@ resolver.define('storeSprintDetails', async ({ payload }) => {
     };
   }
 });
+
 
 // onIssueDone function to handle issue updates
 resolver.define("onIssueDone", async ({ payload }) => {
