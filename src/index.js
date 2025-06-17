@@ -293,6 +293,21 @@ resolver.define('storeSprintDetails', async ({ payload }) => {
     };
   }
 });
+//get sprint details for summary
+resolver.define("getSprintDetails", async () => {
+  try {
+    // Get the most recently viewed sprint from kvs
+    const recentSprint = await kvs.get("sprint-recent");
+    if (!recentSprint || !recentSprint.sprintId) {
+      throw new Error("No recent sprint saved.");
+    }
+    const sprintDetails = await storage.get(`sprint-${recentSprint.sprintId}-details`);
+    return sprintDetails;
+  } catch (err) {
+    console.error("Error getting sprint details: ", err.message);
+    return {};
+  }
+});
 
 // onIssueDone function to handle issue updates
 resolver.define("onIssueDone", async ({ payload }) => {
