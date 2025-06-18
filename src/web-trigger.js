@@ -193,3 +193,26 @@ export async function onSprintClosed(payload) {
         };
     }
 }
+
+export async function getMetrics(payload) {
+    try {
+        const sprint = JSON.parse(payload.body);
+        const sprintMetrics = await storage.get(`sprint-${sprint.id}-metrics`);
+        const data = { message: `Metrics Retrieved Successfully - ${sprint.id}`, sprintMetrics }; 
+
+        return {
+            statusCode: 200,
+            contentType: "application/json",
+            body: JSON.stringify(data)
+        };
+    } catch (err) {
+        return {
+            statusCode: 500,
+            contentType: "application/json",
+            body: JSON.stringify({
+                message: "Internal Server Error",
+                error: err.message
+            }),
+        };
+    }
+}

@@ -8,6 +8,10 @@ modules:
       function: on-sprint-closed
       response: # Dynamic web triggers do not need to define a response field and are dynamic by default.
         type: dynamic
+    - key: get-metrics-web-trigger
+      function: get-metrics
+      response:
+        type: dynamic
   jira:dashboardGadget:
     - key: sustainability-plugin-gadget
       title: Green Track 🌳
@@ -77,6 +81,8 @@ modules:
       handler: trigger.sprintUpdate
     - key: sprint-closed
       handler: trigger.sprintClose
+    - key: get-metrics
+      handler: web-trigger.getMetrics
 
 resources:
   - key: main
