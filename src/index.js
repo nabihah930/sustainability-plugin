@@ -455,4 +455,97 @@ resolver.define("submitChecklist", async ({ payload }) => {
   return { success: true };
 });
 
+// Get accessibility compliance for all issues in the current sprint
+resolver.define("getAccessibilityCompliance", async () => {
+  try {
+    // Get the most recently viewed sprint from kvs
+    const recentSprint = await kvs.get("sprint-recent");
+    if (!recentSprint || !recentSprint.sprintId) {
+      throw new Error("No recent sprint saved.");
+    }
+    const sprintId = recentSprint.sprintId;
+
+    // Fetch all checklist keys for this sprint using kvs.query
+    const checklistResults = await kvs.query()
+      .where('key', WhereConditions.beginsWith(`sprint-${sprintId}-checklist-`))
+      .getMany();
+
+    // Checklist item IDs to text mapping (should match panel.js CHECKLIST_ITEMS)
+    const CHECKLIST_ITEMS = [
+      {
+        id: "1.2.2 Captions (Prerecorded) (A)",
+        description: "Essential for all videos with speech content."
+      },
+      {
+        id: "1.2.4 Captions (Live) (AA)",
+        description: "Important for live streams, TV broadcasts."
+      },
+      {
+        id: "1.2.5 Audio Description (Prerecorded) (AA)",
+        description: "Supports blind/visually impaired users."
+      },
+      {
+        id: "1.4.3 Contrast (Minimum) (AA)",
+        description: "Make sure text and UI are visible on TV screens."
+      },
+      {
+        id: "1.4.11 Non-text Contrast (AA)",
+        description: "Icons, buttons, and indicators should stand out visually."
+      },
+      {
+        id: "1.4.13 Content on Hover or Focus (AA)",
+        description: "Crucial for remote navigation or hover states."
+      },
+      {
+        id: "2.1.1 Keyboard (A)",
+        description: "Supports remote control / keyboard-based navigation."
+      },
+      {
+        id: "2.4.3 Focus Order (A)",
+        description: "Focus must follow a logical UI flow (e.g. remote navigation)."
+      },
+      {
+        id: "2.4.7 Focus Visible (AA)",
+        description: "Make sure focus indicators are clear (for remotes/keyboards)."
+      },
+      {
+        id: "2.5.8 Target Size (Minimum) (AA)",
+        description: "Critical for remote control precision—buttons must be large enough."
+      },
+      {
+        id: "3.3.2 Labels or Instructions (A)",
+        description: "For search bars, login, subscriptions, etc."
+      },
+      {
+        id: "4.1.2 Name, Role, Value (A)",
+        description: "Ensure compatibility with screen readers and smart TV voice assistants."
+      }
+    ];
+    const checklistIdToText = {};
+    CHECKLIST_ITEMS.forEach(item => {
+      checklistIdToText[item.id] = item.id; // Only use the id, no description
+    });
+
+    // Only include issues that have at least one checked item
+    const compliance = checklistResults.results
+      .map(({ key, value }) => {
+        const issueKey = key.split('-checklist-')[1];
+        const checklist = value || {};
+        const items = Object.entries(checklist);
+        const totalCount = items.length;
+        const checkedItems = items
+          .filter(([id, checked]) => checked)
+          .map(([id]) => checklistIdToText[id] || id);
+        const checkedCount = checkedItems.length;
+        return { issueKey, checkedCount, totalCount, checklist, checkedItems };
+      })
+      .filter(row => row.totalCount > 0 && row.checkedCount > 0);
+
+    return compliance;
+  } catch (err) {
+    console.error("Error getting accessibility compliance: ", err.message);
+    return [];
+  }
+});
+
 export const handler = resolver.getDefinitions();
