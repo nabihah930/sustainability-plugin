@@ -38,11 +38,11 @@ function View() {
   const energyEquivalencies = getEnergyEquivalentMessages(totalEnergyKWh);
 
   return (
-    <div style={styles.container}>
+    <>
       <SprintInsights data={data} styles={styles} />
       <SprintSummary sprint={sprint} energyEquivalencies={energyEquivalencies} />
       <AccessibilityCompliance accessibilityCompliance={accessibilityCompliance} />
-    </div>
+    </>
   );
 }
 

@@ -7,7 +7,7 @@ function AccessibilityCompliance({ accessibilityCompliance }) {
     <div style={accessibilityComplianceStyles.section}>
       <h2 style={styles.title}>Accessibility Compliance</h2>
       <div style={{ textAlign: 'center', color: '#555', marginBottom: 12 }}>
-        issues in this sprint with checked accessibility checklist items and their compliance status
+        Issues in this sprint with checked accessibility checklist items and their compliance status
       </div>
       <table style={accessibilityComplianceStyles.table}>
         <thead>
