@@ -7,6 +7,7 @@ import SprintSummary from './SprintSummary';
 
 function View() {
   const [context, setContext] = useState();
+  const [data, setData] = useState(null);
   const [sprint, setSprint] = useState(null);
 
   useEffect(() => {
@@ -18,20 +19,21 @@ function View() {
   }, []);
 
   useEffect(() => {
+    invoke('getSprintMetrics').then(setData);
     invoke('getSprintDetails').then(setSprint);
   }, []);
 
-  if (!context || !sprint) {
+  if (!context || !sprint || !data) {
     return 'Loading...';
   }
 
   // Convert Joules to kWh for energy equivalency
-  const totalEnergyKWh = sprint.total_energy_joules ? sprint.total_energy_joules / 3_600_000 : 0;
+  const totalEnergyKWh = data.total_energy_joules ? data.total_energy_joules / 3_600_000 : 0;
   const energyEquivalencies = getEnergyEquivalentMessages(totalEnergyKWh);
 
   return (
     <div>
-      <SprintInsights data={sprint} styles={styles} />
+      <SprintInsights data={data} styles={styles} />
       <SprintSummary sprint={sprint} energyEquivalencies={energyEquivalencies} />
     </div>
   );

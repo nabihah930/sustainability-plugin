@@ -7,7 +7,7 @@ import { PLACEHOLDERS } from './util/constants.js';
 // Get styles as a parameter
 function SprintInsights({ data, styles }) {
   return (
-    <div style={styles.insightsWrapperCard}>
+    <div style={styles.container}>
       <h2 style={styles.title}>Sustainable Sprint Insights</h2>
       <p style={styles.description}>
         {PLACEHOLDERS.dashboardDescription}

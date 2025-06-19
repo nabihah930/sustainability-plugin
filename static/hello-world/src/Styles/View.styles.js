@@ -1,7 +1,20 @@
 const styles = {
-  container: {
-    padding: 20,
-    fontFamily: 'Arial, sans-serif',
+  // container: {
+  //   padding: 20,
+  //   fontFamily: 'Arial, sans-serif',
+  // },
+  equivalentTitleContainer: { 
+    textAlign: 'center', 
+    marginTop: '35px', 
+    marginBottom: '20px' 
+  },
+  equivalentHeading: { 
+    margin: 0, 
+    color: '#2c3e50' 
+  },
+  equivalentSubHeading: { 
+    margin: '8px 0', 
+    color: '#555' 
   },
   title: {
     textAlign: 'center',
@@ -93,7 +106,7 @@ const styles = {
     marginBottom: 32,
     minHeight: 260, 
   },
-  insightsWrapperCard: {
+  container: {
     width: '100%',
     maxWidth: 900,
     margin: '0 auto',

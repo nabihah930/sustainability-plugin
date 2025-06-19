@@ -30,10 +30,17 @@ function SprintSummary({ sprint, energyEquivalencies }) {
           </tr>
           <tr style={styles.sprintSummaryTableRow}>
             <td style={styles.sprintSummaryTableCell}><strong>State</strong></td>
-            <td style={styles.sprintSummaryTableCell}>{sprint?.state ?? "N/A"}</td>
+            <td style={styles.sprintSummaryTableCell}>{sprint?.state[0].toUpperCase() + sprint?.state.substring(1) ?? "N/A"}</td>
           </tr>
         </tbody>
       </table>
+      {/* Energy Equivalents Heading */}
+      <div style={styles.equivalentTitleContainer}>
+        <h3 style={styles.equivalentHeading}>Energy Impact Snapshot</h3>
+        <p style={styles.equivalentSubHeading}>
+          Your energy usage, translated into real-world equivalents
+        </p>
+      </div>
       <div style={styles.sprintSummaryCardContainer}>
         {/* Home Card */}
         <div style={styles.sprintSummaryCard}>
