@@ -4,11 +4,13 @@ import styles from "./Styles/View.styles.js";
 import SprintInsights from './SprintInsights.js';
 import { getEnergyEquivalentMessages } from './util/helper.js';
 import SprintSummary from './SprintSummary';
+import AccessibilityCompliance from './AccessibilityCompliance.js';
 
 function View() {
   const [context, setContext] = useState();
   const [data, setData] = useState(null);
   const [sprint, setSprint] = useState(null);
+  const [accessibilityCompliance, setAccessibilityCompliance] = useState([]);
 
   useEffect(() => {
     const loadContext = async () => {
@@ -23,6 +25,10 @@ function View() {
     invoke('getSprintDetails').then(setSprint);
   }, []);
 
+  useEffect(() => {
+    invoke('getAccessibilityCompliance').then(setAccessibilityCompliance);
+  }, []);
+
   if (!context || !sprint || !data) {
     return 'Loading...';
   }
@@ -32,10 +38,11 @@ function View() {
   const energyEquivalencies = getEnergyEquivalentMessages(totalEnergyKWh);
 
   return (
-    <div>
+    <>
       <SprintInsights data={data} styles={styles} />
       <SprintSummary sprint={sprint} energyEquivalencies={energyEquivalencies} />
-    </div>
+      <AccessibilityCompliance accessibilityCompliance={accessibilityCompliance} />
+    </>
   );
 }
 
