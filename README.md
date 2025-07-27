@@ -1,6 +1,6 @@
-# Forge Hello World
+# Forge Sustainability Plugin 🍀
 
-This project contains a Forge app written in JavaScript that displays `Hello World!` in a Jira dashboard gadget.
+This project contains a Forge app written in JavaScript that functions as a sustainability plugin for use by development teams.
 
 See [developer.atlassian.com/platform/forge/](https://developer.atlassian.com/platform/forge) for documentation and tutorials explaining Forge.
 
