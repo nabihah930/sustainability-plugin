@@ -1,4 +1,4 @@
-# Forge Sustainability Plugin 🍀
+# Green Track - Forge Sustainability Plugin 🍀
 
 This project contains a Forge app written in JavaScript that functions as a sustainability plugin for use by development teams.
 
